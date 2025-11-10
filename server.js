@@ -1,4 +1,7 @@
 // server.js
+import path from "path";
+import { fileURLToPath } from "url";
+import express from "express";
 require('dotenv').config();
 const express = require('express');
 const helmet = require('helmet');
@@ -298,3 +301,10 @@ if (require.main === module) {
 
 // Export for serverless (Vercel)
 module.exports = serverless(app);
+const app = express();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// ✅ Serve checkout.html as homepage
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "checkout.html"));
+});
