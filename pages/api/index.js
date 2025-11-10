@@ -194,4 +194,5 @@ if (require.main === module) {
 }
 
 // ---------- Export for Vercel ----------
-module.exports = serverless(app);
+export default serverless(app);
+
