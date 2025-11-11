@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SSCheckout</title>
+  <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .container {
+      background: white;
+      padding: 3rem;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      text-align: center;
+      max-width: 600px;
+    }
+    h1 { color: #333; margin-bottom: 1rem; }
+    .status { font-size: 4rem; margin-bottom: 1rem; }
+    p { color: #666; line-height: 1.6; margin: 0.5rem 0; }
+    .links {
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 1px solid #eee;
+    }
+    .btn {
+      display: inline-block;
+      padding: 12px 24px;
+      margin: 8px;
+      background: #667eea;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      transition: background 0.3s;
+    }
+    .btn:hover {
+      background: #5568d3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="status">✅</div>
+    <h1>SSCheckout Connected</h1>
+    <p>Your custom Shopify checkout app is successfully installed.</p>
+    <p><strong>Features:</strong></p>
+    <p>✓ Custom checkout with Razorpay integration</p>
+    <p>✓ COD (Cash on Delivery) support</p>
+    <p>✓ Automatic order sync to Shopify</p>
+    
+    <div class="links">
+      <a href="/checkout.html" class="btn">Open Checkout</a>
+      <a href="https://snapsnicker2025.myshopify.com/admin/orders" class="btn" target="_top">View Orders</a>
+    </div>
+  </div>
+
+  <script>
+    // Initialize App Bridge for embedded app
+    const urlParams = new URLSearchParams(window.location.search);
+    const shop = urlParams.get('shop');
+    const host = urlParams.get('host');
+    
+    if (shop && host && window.ShopifyApp) {
+      const AppBridge = window['app-bridge'];
+      const createApp = AppBridge.default;
+      const app = createApp({
+        apiKey: 'YOUR_API_KEY', // This will be replaced in production
+        host: host,
+        forceRedirect: true
+      });
+    }
+  </script>
+</body>
+</html>
