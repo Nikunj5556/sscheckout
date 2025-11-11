@@ -7,13 +7,14 @@
   <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
   <style>
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 2rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     }
     .container {
       background: white;
@@ -22,10 +23,27 @@
       box-shadow: 0 10px 30px rgba(0,0,0,0.2);
       text-align: center;
       max-width: 600px;
+      width: 100%;
     }
-    h1 { color: #333; margin-bottom: 1rem; }
     .status { font-size: 4rem; margin-bottom: 1rem; }
+    h1 { color: #333; margin-bottom: 1rem; }
     p { color: #666; line-height: 1.6; margin: 0.5rem 0; }
+    .feature-list {
+      text-align: left;
+      margin: 2rem auto;
+      max-width: 400px;
+    }
+    .feature-item {
+      padding: 0.5rem 0;
+      display: flex;
+      align-items: center;
+    }
+    .feature-item::before {
+      content: "✓";
+      color: #4caf50;
+      font-weight: bold;
+      margin-right: 0.5rem;
+    }
     .links {
       margin-top: 2rem;
       padding-top: 2rem;
@@ -40,9 +58,21 @@
       text-decoration: none;
       border-radius: 6px;
       transition: background 0.3s;
+      cursor: pointer;
+      border: none;
+      font-size: 16px;
     }
     .btn:hover {
       background: #5568d3;
+    }
+    .debug-info {
+      margin-top: 2rem;
+      padding: 1rem;
+      background: #f5f5f5;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #666;
+      text-align: left;
     }
   </style>
 </head>
@@ -51,31 +81,103 @@
     <div class="status">✅</div>
     <h1>SSCheckout Connected</h1>
     <p>Your custom Shopify checkout app is successfully installed.</p>
-    <p><strong>Features:</strong></p>
-    <p>✓ Custom checkout with Razorpay integration</p>
-    <p>✓ COD (Cash on Delivery) support</p>
-    <p>✓ Automatic order sync to Shopify</p>
+    
+    <div class="feature-list">
+      <div class="feature-item">Custom checkout with Razorpay integration</div>
+      <div class="feature-item">COD (Cash on Delivery) support</div>
+      <div class="feature-item">Automatic order sync to Shopify</div>
+    </div>
     
     <div class="links">
-      <a href="/checkout.html" class="btn">Open Checkout</a>
-      <a href="https://snapsnicker2025.myshopify.com/admin/orders" class="btn" target="_top">View Orders</a>
+      <button onclick="openCheckout()" class="btn">Open Checkout</button>
+      <button onclick="viewOrders()" class="btn">View Orders</button>
+    </div>
+
+    <div class="debug-info" id="debug-info">
+      <strong>App Status:</strong> Initializing...
     </div>
   </div>
 
   <script>
-    // Initialize App Bridge for embedded app
+    // Parse URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const shop = urlParams.get('shop');
     const host = urlParams.get('host');
+    const embedded = urlParams.get('embedded');
     
-    if (shop && host && window.ShopifyApp) {
-      const AppBridge = window['app-bridge'];
-      const createApp = AppBridge.default;
-      const app = createApp({
-        apiKey: 'YOUR_API_KEY', // This will be replaced in production
-        host: host,
-        forceRedirect: true
-      });
+    // Debug logging
+    console.log('Shop:', shop);
+    console.log('Host:', host);
+    console.log('Embedded:', embedded);
+    console.log('Location:', window.location.href);
+
+    // Update debug info
+    const debugEl = document.getElementById('debug-info');
+    debugEl.innerHTML = `
+      <strong>App Status:</strong> Connected<br>
+      <strong>Shop:</strong> ${shop || 'Not provided'}<br>
+      <strong>Embedded:</strong> ${embedded || 'No'}<br>
+      <strong>Frame:</strong> ${window.self !== window.top ? 'Inside iframe' : 'Standalone'}
+    `;
+
+    // Initialize App Bridge if running in Shopify
+    let app = null;
+    if (shop && host) {
+      try {
+        const AppBridge = window['app-bridge'];
+        const createApp = AppBridge.default;
+        const Redirect = AppBridge.actions.Redirect;
+        
+        app = createApp({
+          apiKey: '506bd541bba7dde027d567d2cf9426eb', // Replace with your actual API key from env
+          host: host,
+        });
+
+        console.log('App Bridge initialized successfully');
+        debugEl.innerHTML += '<br><strong>App Bridge:</strong> ✓ Initialized';
+      } catch (error) {
+        console.error('App Bridge initialization error:', error);
+        debugEl.innerHTML += '<br><strong>App Bridge:</strong> ✗ Error - ' + error.message;
+      }
+    } else {
+      debugEl.innerHTML += '<br><strong>App Bridge:</strong> Not needed (standalone mode)';
+    }
+
+    function openCheckout() {
+      if (app) {
+        // If in Shopify admin, open in new tab
+        const Redirect = window['app-bridge'].actions.Redirect;
+        const redirect = Redirect.create(app);
+        redirect.dispatch(Redirect.Action.REMOTE, {
+          url: 'https://sscheckout.vercel.app/checkout.html',
+          newContext: true,
+        });
+      } else {
+        // If standalone, just navigate
+        window.open('/checkout.html', '_blank');
+      }
+    }
+
+    function viewOrders() {
+      if (app && shop) {
+        // Redirect within Shopify admin
+        const Redirect = window['app-bridge'].actions.Redirect;
+        const redirect = Redirect.create(app);
+        redirect.dispatch(Redirect.Action.ADMIN_PATH, '/orders');
+      } else if (shop) {
+        window.open(`https://${shop}/admin/orders`, '_blank');
+      } else {
+        alert('Shop parameter not found');
+      }
+    }
+
+    // Handle authentication redirect if needed
+    if (shop && !host && window.self === window.top) {
+      // If shop is present but host is missing, and we're not in an iframe,
+      // redirect to Shopify to get proper embedded context
+      console.log('Redirecting to get embedded context...');
+      const redirectUrl = `https://${shop}/admin/apps/sscheckout`;
+      window.location.href = redirectUrl;
     }
   </script>
 </body>
