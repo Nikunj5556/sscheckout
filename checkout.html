@@ -597,24 +597,42 @@
 
     // ===== CART LOADING WITH IMPROVED ERROR HANDLING =====
     function loadCart() {
-      console.log('🔍 Loading cart data...');
-      
-      // Try to get cart from sessionStorage
-      let cartJson = sessionStorage.getItem('shopify_cart');
-      
-      // Also check URL parameters as fallback
-      if (!cartJson) {
-        const urlParams = new URLSearchParams(window.location.search);
-        const cartParam = urlParams.get('cart');
-        if (cartParam) {
-          try {
-            cartJson = decodeURIComponent(cartParam);
-            console.log('✅ Cart loaded from URL parameters');
-          } catch (e) {
-            console.error('❌ Failed to parse URL cart parameter:', e);
-          }
-        }
-      }
+  console.log('Loading cart...');
+  
+  // Get from URL parameters (using 'c' for cart, 's' for store)
+  const urlParams = new URLSearchParams(window.location.search);
+  const cartParam = urlParams.get('c') || urlParams.get('cart');
+  const storeParam = urlParams.get('s') || urlParams.get('store');
+  
+  if (!cartParam) {
+    showError(
+      'Cart is empty. Please add items to your cart.<br>' 
+      '<a href="javascript:history.back()" style="color: #0f172a; text-decoration: underline;">← Go back</a>'
+    );
+    document.getElementById('cartItems').innerHTML = 
+      '<div style="text-align:center;padding:40px;">' +
+      '<p style="font-size:1.2rem;margin-bottom:20px;">Your cart is empty</p>' +
+      '<a href="javascript:history.back()" style="display:inline-block;padding:12px 24px;background:#0f172a;color:white;text-decoration:none;border-radius:8px;">Return to Store</a>' +
+      '</div>';
+    return;
+  }
+
+  try {
+    cartData = JSON.parse(decodeURIComponent(cartParam));
+    
+    if (!cartData.items || cartData.items.length === 0) {
+      throw new Error('No items in cart');
+    }
+    
+    console.log('✅ Cart loaded:', cartData.items.length, 'items');
+    displayCartItems();
+    calculateTotals();
+    
+  } catch (error) {
+    console.error('Error:', error);
+    showError('Failed to load cart: ' + error.message);
+  }
+}
 
       const timestamp = sessionStorage.getItem('cart_timestamp');
       const storeUrl = sessionStorage.getItem('shopify_store');
