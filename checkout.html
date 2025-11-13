@@ -390,26 +390,29 @@
   </div>
 
   <script>
-    // ===== CONFIGURATION =====
+    // ===== COMPREHENSIVE DEBUG LOGGING =====
+    console.log('╔════════════════════════════════════════╗');
+    console.log('║   SSCHECKOUT - CHECKOUT PAGE LOADED   ║');
+    console.log('╚════════════════════════════════════════╝');
+    console.log('🌐 URL:', window.location.href);
+    console.log('📅 Time:', new Date().toLocaleString());
+    console.log('🔗 Referrer:', document.referrer);
+    
+    // Initialize Supabase
     const SUPABASE_URL = 'https://xdieivjjxxqgullwrzhq.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkaWVpdmpqeHhxZ3VsbHdyemhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NDU3NTYsImV4cCI6MjA3ODUyMTc1Nn0.Y2VIOiJq4aRjd6hTxvkYk4sJJyCFio0NQ7SlLLYZ9xM';
-    const RAZORPAY_KEY_ID = 'rzp_live_3v7BmF6j3iuh2u';
-
-    // ===== INITIALIZE SERVICES =====
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // ===== GLOBAL VARIABLES =====
+    // Razorpay Configuration
+    const RAZORPAY_KEY_ID = 'rzp_live_3v7BmF6j3iuh2u';
+
+    // Global variables
     let cartData = null;
-    let checkoutData = null;
     let appliedDiscount = null;
     let selectedPaymentMethod = null;
+    let storeInfo = null;
 
-    // ===== DEBUG LOGGING =====
-    console.log('=== CHECKOUT PAGE LOADED ===');
-    console.log('URL:', window.location.href);
-    console.log('Referrer:', document.referrer);
-
-    // ===== STATE DROPDOWN =====
+    // ===== STATE DROPDOWN FUNCTIONALITY =====
     const states = [
       'Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Andaman and Nicobar Islands','Chandigarh','Dadra and Nagar Haveli and Daman and Diu','Delhi','Jammu and Kashmir','Ladakh','Lakshadweep','Puducherry'
     ];
@@ -437,7 +440,9 @@
         div.classList.add('option');
         div.textContent = state;
         div.dataset.initials = getInitials(state);
-        div.addEventListener('click', () => selectState(state));
+        div.addEventListener('click', () => {
+          selectState(state);
+        });
         fragment.appendChild(div);
       });
       optionsContainer.appendChild(fragment);
@@ -475,11 +480,14 @@
       const f = filter.trim().toLowerCase();
       const initials = optionText.dataset.initials.toLowerCase();
       const name = optionText.textContent.toLowerCase();
+
       if (name.includes(f)) return true;
       if (initials.startsWith(f.toUpperCase())) return true;
       if (codeMap[f.toUpperCase()] && codeMap[f.toUpperCase()].toLowerCase() === name) return true;
+
       const consonants = name.replace(/[aeiou\s]/g, '');
       if (consonants.startsWith(f)) return true;
+
       return false;
     }
 
@@ -533,6 +541,8 @@
       }
     });
 
+    window.setStateValue = (name) => selectState(name);
+
     // ===== PAYMENT METHOD SELECTION =====
     document.querySelectorAll('.method-btn').forEach(btn => {
       btn.addEventListener('click', function() {
@@ -543,89 +553,124 @@
       });
     });
 
-    // ===== CART LOADING FROM LOCALSTORAGE =====
+    // ===== CART LOADING WITH localStorage =====
     function loadCart() {
-      console.log('🔍 Loading cart data...');
+      console.log('\n📦 LOADING CART DATA...');
+      console.log('─'.repeat(50));
       
-      let encodedData = null;
+      let checkoutData = null;
       
-      // Method 1: Try localStorage (primary)
-      try {
-        encodedData = localStorage.getItem('sscheckout_cart');
-        if (encodedData) {
-          console.log('✅ Cart found in localStorage');
+      // METHOD 1: Try localStorage (Primary)
+      console.log('🔍 Checking localStorage...');
+      const localStorageData = localStorage.getItem('sscheckout_cart');
+      const timestamp = localStorage.getItem('sscheckout_timestamp');
+      
+      if (localStorageData) {
+        console.log('✅ Found data in localStorage');
+        console.log('   Length:', localStorageData.length, 'characters');
+        console.log('   Timestamp:', timestamp ? new Date(parseInt(timestamp)).toLocaleString() : 'N/A');
+        
+        try {
+          // Decode from Base64
+          const decoded = decodeURIComponent(atob(localStorageData));
+          checkoutData = JSON.parse(decoded);
+          console.log('✅ Successfully decoded localStorage data');
+        } catch (e) {
+          console.error('❌ Failed to decode localStorage:', e.message);
         }
-      } catch (e) {
-        console.warn('⚠️ localStorage access failed:', e);
+      } else {
+        console.log('⚠️ No data found in localStorage');
       }
       
-      // Method 2: Try URL parameter (fallback)
-      if (!encodedData) {
+      // METHOD 2: Try URL parameter (Fallback)
+      if (!checkoutData) {
+        console.log('🔍 Checking URL parameters...');
         const urlParams = new URLSearchParams(window.location.search);
-        encodedData = urlParams.get('d') || urlParams.get('cart');
-        if (encodedData) {
-          console.log('✅ Cart found in URL parameters');
+        const urlData = urlParams.get('d');
+        
+        if (urlData) {
+          console.log('✅ Found data in URL parameter');
+          console.log('   Length:', urlData.length, 'characters');
+          
+          try {
+            const decoded = decodeURIComponent(atob(urlData));
+            checkoutData = JSON.parse(decoded);
+            console.log('✅ Successfully decoded URL data');
+          } catch (e) {
+            console.error('❌ Failed to decode URL parameter:', e.message);
+          }
+        } else {
+          console.log('⚠️ No data found in URL parameters');
         }
       }
       
-      // No cart data found
-      if (!encodedData) {
-        console.error('❌ No cart data found');
+      // If no data found
+      if (!checkoutData || !checkoutData.cart) {
+        console.error('\n❌ NO CART DATA FOUND');
+        console.log('─'.repeat(50));
+        console.log('localStorage keys:', Object.keys(localStorage));
+        console.log('URL search:', window.location.search);
+        
         showError(
-          'Cart is empty. Please add items to your cart.<br>' +
+          'Cart data not found. Please return to the store and try again.<br>' +
           '<a href="javascript:history.back()" class="back-link">← Go back to store</a>'
         );
+        
         document.getElementById('cartItems').innerHTML = 
-          '<div style="text-align:center;padding:40px;color:#6b7280;">' +
-          '<p style="font-size:1.2rem;margin-bottom:20px;font-weight:600;">Your cart is empty</p>' +
-          '<p style="font-size:0.95rem;">Please add items before checkout</p>' +
-          '<a href="javascript:history.back()" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#0f172a;color:white;text-decoration:none;border-radius:8px;font-weight:600;">Return to Store</a>' +
+          '<div style="text-align: center; padding: 40px; color: #dc2626;">' +
+          '<p style="font-size: 1.2rem; margin-bottom: 20px; font-weight: 600;">Cart Data Not Found</p>' +
+          '<p style="font-size: 0.9rem; margin-bottom: 20px;">Please return to your store and click checkout again.</p>' +
+          '<a href="javascript:history.back()" style="display: inline-block; padding: 12px 24px; background: #0f172a; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">Return to Store</a>' +
           '</div>';
         return;
       }
 
       try {
-        // Decode from Base64
-        const decodedString = decodeURIComponent(atob(encodedData));
-        checkoutData = JSON.parse(decodedString);
-        
-        console.log('✅ Checkout data decoded:', checkoutData);
-        
-        // Validate structure
-        if (!checkoutData || !checkoutData.cart) {
-          throw new Error('Invalid checkout data structure');
-        }
-        
+        // Extract cart and store info
         cartData = checkoutData.cart;
+        storeInfo = checkoutData.store;
         
+        console.log('\n✅ CART DATA LOADED SUCCESSFULLY');
+        console.log('─'.repeat(50));
+        console.log('📊 Cart Summary:');
+        console.log('   Items:', cartData.items.length);
+        console.log('   Item count:', cartData.item_count);
+        console.log('   Total:', (cartData.total_price / 100).toFixed(2), cartData.currency);
+        console.log('   Store:', storeInfo.name);
+        console.log('   Domain:', storeInfo.domain);
+        
+        // Log each item
+        console.log('\n📝 Cart Items:');
+        cartData.items.forEach((item, index) => {
+          console.log(`   ${index + 1}. ${item.title}`);
+          console.log(`      Variant: ${item.variant_title || 'N/A'}`);
+          console.log(`      Price: ₹${(item.price / 100).toFixed(2)} × ${item.quantity}`);
+          console.log(`      Image: ${item.image ? '✓' : '✗'}`);
+        });
+        
+        // Validate cart structure
         if (!cartData.items || !Array.isArray(cartData.items) || cartData.items.length === 0) {
           throw new Error('Cart has no items');
         }
         
-        console.log('📦 Cart loaded successfully');
-        console.log('  - Items:', cartData.items.length);
-        console.log('  - Total:', (cartData.total_price / 100).toFixed(2), cartData.currency);
-        console.log('  - Store:', checkoutData.store?.domain);
-        
+        console.log('\n✅ Displaying cart items...');
         displayCartItems();
         calculateTotals();
+        console.log('✅ Cart loaded successfully!');
         
       } catch (error) {
-        console.error('❌ Error loading cart:', error);
-        showError(
-          'Failed to load cart data: ' + error.message + 
-          '<br><a href="javascript:history.back()" class="back-link">← Go back</a>'
-        );
+        console.error('\n❌ ERROR PROCESSING CART:', error);
+        showError('Failed to load cart: ' + error.message);
+        
         document.getElementById('cartItems').innerHTML = 
-          '<div style="text-align:center;padding:40px;color:#dc2626;">' +
-          '<p style="font-size:1.1rem;margin-bottom:10px;font-weight:600;">Error loading cart</p>' +
-          '<p style="font-size:0.9rem;">' + error.message + '</p>' +
-          '<a href="javascript:history.back()" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#0f172a;color:white;text-decoration:none;border-radius:8px;font-weight:600;">Go Back</a>' +
+          '<div style="text-align: center; padding: 40px; color: #dc2626;">' +
+          '<p style="font-size: 1.1rem; margin-bottom: 10px;">Error loading cart</p>' +
+          '<p style="font-size: 0.9rem;">' + error.message + '</p>' +
+          '<a href="javascript:history.back()" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background: #0f172a; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">Go Back</a>' +
           '</div>';
       }
     }
 
-    // ===== DISPLAY CART ITEMS =====
     function displayCartItems() {
       const cartItemsContainer = document.getElementById('cartItems');
       cartItemsContainer.innerHTML = '';
@@ -639,7 +684,8 @@
         const itemDiv = document.createElement('div');
         itemDiv.className = 'cart-product';
         
-        const imageUrl = item.image || item.featured_image || 'https://via.placeholder.com/60?text=Product';
+        // Use multiple image sources as fallback
+        const imageUrl = item.image || item.featured_image?.url || item.featured_image || 'https://via.placeholder.com/60?text=Product';
         const itemTitle = item.title || item.product_title || 'Product';
         const itemVariant = item.variant_title || '';
         const itemQuantity = item.quantity || 1;
@@ -656,22 +702,27 @@
         cartItemsContainer.appendChild(itemDiv);
       });
       
-      console.log('✅ Cart items displayed');
+      console.log('✅ Cart items displayed on page');
     }
 
-    // ===== CALCULATE TOTALS =====
+    // ===== PRICE CALCULATIONS =====
     function calculateTotals() {
       if (!cartData || !cartData.items) {
         console.warn('⚠️ Cannot calculate totals: no cart data');
         return;
       }
 
-      const subtotal = cartData.total_price / 100;
+      const subtotal = cartData.items.reduce((sum, item) => {
+        const price = item.price || item.final_price || 0;
+        const quantity = item.quantity || 1;
+        return sum + (price * quantity);
+      }, 0) / 100;
+      
       document.getElementById('subtotal').textContent = `₹${subtotal.toFixed(0)}`;
 
       let total = subtotal;
 
-      // Add GST if state selected
+      // Add GST if state is selected
       const stateSelected = stateInput.value !== '';
       if (stateSelected) {
         const gst = subtotal * 0.05;
@@ -798,9 +849,10 @@
         return false;
       }
       if (!cartData || !cartData.items || cartData.items.length === 0) {
-        showError('Your cart is empty');
+        showError('Your cart is empty. Please add items before checkout.');
         return false;
       }
+
       return true;
     }
 
@@ -830,7 +882,6 @@
         })),
         subtotal: parseFloat(document.getElementById('subtotal').textContent.replace('₹', '').replace(',', '')),
         total_amount: totalAmount,
-        store_domain: checkoutData?.store?.domain || 'unknown',
         created_at: new Date().toISOString()
       };
 
@@ -890,7 +941,7 @@
       } catch (error) {
         showLoading(false);
         console.error('❌ Database error:', error);
-        showError('Failed to save order: ' + error.message);
+        showError('Failed to save order: ' + error.message + '. Please try again.');
         throw error;
       }
     }
@@ -920,7 +971,7 @@
         key: RAZORPAY_KEY_ID,
         amount: Math.round(amount * 100),
         currency: 'INR',
-        name: 'SSCheckout',
+        name: storeInfo ? storeInfo.name : 'SSCheckout',
         description: `Order #${orderData.order_id}`,
         prefill: {
           name: orderData.customer_name,
@@ -942,7 +993,7 @@
         },
         modal: {
           ondismiss: function() {
-            console.log('⚠️ Payment cancelled');
+            console.log('⚠️ Payment cancelled by user');
             showError('Payment cancelled. Please try again.');
           }
         }
@@ -952,7 +1003,7 @@
         const rzp = new Razorpay(options);
         rzp.open();
       }).catch((error) => {
-        console.error('❌ Failed to save order:', error);
+        console.error('❌ Failed to save order before payment:', error);
         showError('Failed to initiate payment. Please try again.');
       });
     }
@@ -966,12 +1017,8 @@
       document.getElementById('customerEmail').textContent = email;
       
       // Clear stored cart data
-      try {
-        localStorage.removeItem('sscheckout_cart');
-        localStorage.removeItem('sscheckout_timestamp');
-      } catch (e) {
-        console.warn('Could not clear localStorage:', e);
-      }
+      localStorage.removeItem('sscheckout_cart');
+      localStorage.removeItem('sscheckout_timestamp');
     }
 
     function showLoading(show) {
@@ -982,16 +1029,28 @@
       const errorDiv = document.getElementById('errorMessage');
       errorDiv.innerHTML = message;
       errorDiv.classList.add('active');
-      setTimeout(() => errorDiv.classList.remove('active'), 8000);
+      
+      setTimeout(() => {
+        errorDiv.classList.remove('active');
+      }, 8000);
+      
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     // ===== INITIALIZE =====
     window.addEventListener('DOMContentLoaded', () => {
-      console.log('🚀 Initializing checkout...');
+      console.log('\n🚀 Initializing checkout page...');
       populateOptions();
       loadCart();
     });
+
+    // Debug helper - expose to console
+    window.debugCheckout = function() {
+      console.log('=== DEBUG INFO ===');
+      console.log('localStorage cart:', localStorage.getItem('sscheckout_cart'));
+      console.log('cartData:', cartData);
+      console.log('storeInfo:', storeInfo);
+    };
   </script>
 </body>
 </html>
