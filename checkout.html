@@ -275,17 +275,6 @@
             color: #666666;
         }
 
-        .payment-icons {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px;
-        }
-
-        .payment-icon {
-            height: 24px;
-            width: auto;
-        }
-
         /* COD Notice */
         .cod-notice {
             background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
@@ -623,6 +612,30 @@
             font-weight: 600;
         }
 
+        /* Error State */
+        .error-screen {
+            display: none;
+            max-width: 600px;
+            margin: 60px auto;
+            text-align: center;
+        }
+
+        .error-screen.active {
+            display: block;
+        }
+
+        .error-icon {
+            width: 80px;
+            height: 80px;
+            background: #fee2e2;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            font-size: 3rem;
+        }
+
         /* Mobile Optimizations */
         @media (max-width: 767px) {
             .header-content {
@@ -661,7 +674,6 @@
             }
         }
 
-        /* Hide spinners on number inputs */
         input[type=number]::-webkit-inner-spin-button,
         input[type=number]::-webkit-outer-spin-button {
             -webkit-appearance: none;
@@ -712,6 +724,21 @@
             <div class="progress-step" id="step3">
                 <div class="progress-circle">3</div>
                 <span class="progress-label">Complete</span>
+            </div>
+        </div>
+
+        <!-- Error Screen -->
+        <div class="error-screen" id="errorScreen">
+            <div class="card">
+                <div class="error-icon">⚠️</div>
+                <h1 class="thank-you-title">Unable to Load Cart</h1>
+                <p class="thank-you-subtitle">
+                    We couldn't retrieve your cart information.<br>
+                    Please try again or return to the store.
+                </p>
+                <a href="https://snapsnicker2025.myshopify.com" class="btn" style="text-decoration: none;">
+                    🏠 Return to Store
+                </a>
             </div>
         </div>
 
@@ -815,9 +842,6 @@
                                 <div class="payment-method-content">
                                     <div class="payment-method-title">Pay Online</div>
                                     <div class="payment-method-subtitle">UPI, Cards, Net Banking, Wallets</div>
-                                    <div class="payment-icons">
-                                        💳 🏦 📱
-                                    </div>
                                 </div>
                             </label>
 
@@ -963,41 +987,123 @@
         let discount = 0;
         let total = 0;
         let isCOD = false;
-        let discountCode = null;
+        let checkoutData = null;
 
         // =====================================================
         // INITIALIZATION
         // =====================================================
         window.addEventListener('DOMContentLoaded', () => {
-            loadCart();
+            console.log('🛒 Checkout page loaded');
+            loadCartData();
             setupPaymentMethodListeners();
             setupFormValidation();
             setupFormSubmit();
         });
 
         // =====================================================
-        // LOAD CART FROM URL
+        // LOAD CART DATA FROM SHOPIFY
         // =====================================================
-        function loadCart() {
-            const params = new URLSearchParams(window.location.search);
-            const cartData = params.get('cart');
-            discountCode = params.get('discount');
+        function loadCartData() {
+            console.log('📦 Loading cart data...');
 
-            if (!cartData) {
-                alert('No items in cart!');
-                window.location.href = 'https://snapsnicker2025.myshopify.com';
+            try {
+                // Method 1: Try URL parameter (d=)
+                const urlParams = new URLSearchParams(window.location.search);
+                const encodedData = urlParams.get('d');
+
+                if (encodedData) {
+                    console.log('✅ Found cart data in URL parameter');
+                    const decodedData = JSON.parse(decodeURIComponent(atob(encodedData)));
+                    checkoutData = decodedData;
+                    processCheckoutData(decodedData);
+                    return;
+                }
+
+                // Method 2: Try localStorage (from Shopify redirect)
+                const localStorageData = localStorage.getItem('sscheckout_cart');
+                if (localStorageData) {
+                    console.log('✅ Found cart data in localStorage');
+                    const decodedData = JSON.parse(decodeURIComponent(atob(localStorageData)));
+                    checkoutData = decodedData;
+                    processCheckoutData(decodedData);
+                    
+                    // Clear localStorage after successful load
+                    localStorage.removeItem('sscheckout_cart');
+                    localStorage.removeItem('sscheckout_timestamp');
+                    return;
+                }
+
+                // Method 3: Try sessionStorage (fallback)
+                const sessionData = sessionStorage.getItem('sscheckout_cart');
+                if (sessionData) {
+                    console.log('✅ Found cart data in sessionStorage');
+                    const decodedData = JSON.parse(sessionData);
+                    checkoutData = decodedData;
+                    processCheckoutData(decodedData);
+                    return;
+                }
+
+                // No cart data found
+                console.error('❌ No cart data found');
+                showError();
+
+            } catch (error) {
+                console.error('❌ Error loading cart data:', error);
+                showError();
+            }
+        }
+
+        function processCheckoutData(data) {
+            console.log('🔄 Processing checkout data:', data);
+
+            if (!data.cart || !data.cart.items || data.cart.items.length === 0) {
+                console.error('❌ Cart is empty');
+                showError();
                 return;
             }
 
-            try {
-                cart = JSON.parse(decodeURIComponent(cartData));
-                displayCart();
-                calculateTotals();
-            } catch (error) {
-                console.error('Error loading cart:', error);
-                alert('Invalid cart data!');
-                window.location.href = 'https://snapsnicker2025.myshopify.com';
-            }
+            // Extract cart items with proper Shopify data structure
+            cart = data.cart.items.map(item => {
+                // Handle price (Shopify returns price in cents)
+                const price = item.final_price ? item.final_price / 100 : item.price / 100;
+                
+                // Get product image
+                let imageUrl = 'https://via.placeholder.com/60';
+                if (item.image) {
+                    imageUrl = item.image;
+                } else if (item.featured_image && item.featured_image.url) {
+                    imageUrl = item.featured_image.url;
+                }
+
+                // Get product title
+                const productTitle = item.product_title || item.title;
+                const variantTitle = item.variant_title || '';
+
+                return {
+                    id: item.id,
+                    variant_id: item.variant_id,
+                    product_id: item.product_id,
+                    title: productTitle,
+                    variant: variantTitle,
+                    price: price,
+                    quantity: item.quantity,
+                    image: imageUrl,
+                    sku: item.sku || ''
+                };
+            });
+
+            console.log('✅ Processed cart items:', cart);
+
+            displayCart();
+            calculateTotals();
+            
+            // Show checkout form
+            document.getElementById('checkoutForm').style.display = 'block';
+        }
+
+        function showError() {
+            document.getElementById('checkoutForm').style.display = 'none';
+            document.getElementById('errorScreen').classList.add('active');
         }
 
         // =====================================================
@@ -1008,7 +1114,7 @@
             
             container.innerHTML = cart.map(item => `
                 <div class="summary-item">
-                    <img src="${item.image || 'https://via.placeholder.com/60'}" 
+                    <img src="${item.image}" 
                          alt="${item.title}" 
                          class="summary-image"
                          onerror="this.src='https://via.placeholder.com/60'">
@@ -1026,49 +1132,17 @@
         // =====================================================
         // CALCULATE TOTALS
         // =====================================================
-        async function calculateTotals() {
+        function calculateTotals() {
             subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            discount = 0;
-
-            // Apply discount if available
-            if (discountCode) {
-                const discountData = await validateDiscountCode(discountCode);
-                if (discountData) {
-                    if (discountData.discount_type === 'percentage') {
-                        discount = subtotal * (discountData.discount_value / 100);
-                    } else {
-                        discount = discountData.discount_value;
-                    }
-                    
-                    document.getElementById('discountRow').style.display = 'flex';
-                    document.getElementById('discountAmount').textContent = `-₹${discount.toFixed(0)}`;
-                }
+            
+            // Check for cart-level discounts from Shopify
+            if (checkoutData && checkoutData.cart && checkoutData.cart.total_discount) {
+                discount = checkoutData.cart.total_discount / 100; // Convert from cents
+                document.getElementById('discountRow').style.display = 'flex';
+                document.getElementById('discountAmount').textContent = `-₹${discount.toFixed(0)}`;
             }
 
             updateTotalDisplay();
-        }
-
-        async function validateDiscountCode(code) {
-            try {
-                const { data, error } = await supabase
-                    .from('discount_codes')
-                    .select('*')
-                    .eq('code', code.toUpperCase())
-                    .eq('is_active', true)
-                    .single();
-
-                if (error || !data) return null;
-
-                // Check validity
-                if (data.valid_until && new Date(data.valid_until) < new Date()) return null;
-                if (data.usage_limit && data.used_count >= data.usage_limit) return null;
-                if (data.min_purchase_amount && subtotal < data.min_purchase_amount) return null;
-
-                return data;
-            } catch (error) {
-                console.error('Error validating discount:', error);
-                return null;
-            }
         }
 
         function updateTotalDisplay() {
@@ -1272,7 +1346,6 @@
                         postal_code: formData.pincode,
                         payment_method: paymentMethod,
                         payment_status: 'Paid',
-                        discount_code: discountCode,
                         razorpay_payment_id: paymentId,
                         subtotal: subtotal,
                         total_amount: actualTotal,
@@ -1297,13 +1370,6 @@
                     .insert(orderItems);
 
                 if (itemsError) throw itemsError;
-
-                // Update discount code usage
-                if (discountCode) {
-                    await supabase.rpc('increment_discount_usage', { 
-                        discount_code: discountCode.toUpperCase() 
-                    });
-                }
 
                 // Show thank you screen
                 showThankYouScreen(orderId, formData.email, total);
