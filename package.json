@@ -1,14 +1,17 @@
 {
-  "name": "sscheckout",
-  "version": "1.0.0",
-  "type": "module",
+  "name": "sscheckout-backend",
+  "private": true,
   "scripts": {
-    "dev": "vercel dev"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
     "razorpay": "^2.9.4"
   },
-  "engines": {
-    "node": ">=18"
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/node": "^20.11.30"
   }
 }
