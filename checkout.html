@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Checkout - Snapsnicker</title>
+  <title>Secure Checkout - Snapsnicker</title>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,414 +11,593 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
-    body { background: #f3f5f7; display: flex; justify-content: center; align-items: flex-start; padding: 40px; }
+    body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
 
-    /* Mobile Responsive */
-    @media (max-width: 768px) {
-      body { padding: 0; }
+    .main-container { max-width: 1200px; margin: 0 auto; }
+
+    /* Header */
+    .checkout-header {
+      background: white;
+      padding: 20px 30px;
+      border-radius: 16px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo img {
+      height: 45px;
+      width: auto;
+    }
+
+    .brand-name {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #667eea;
+      letter-spacing: -0.5px;
+    }
+
+    .secure-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #f0fdf4;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color: #166534;
+      font-weight: 600;
+    }
+
+    .secure-badge::before {
+      content: "🔒";
+      font-size: 1.1rem;
     }
 
     .checkout-container {
       display: flex;
-      background: #fff;
-      border-radius: 20px;
-      width: 100%;
-      max-width: 1100px;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-      overflow: hidden;
+      gap: 20px;
+      background: transparent;
+      flex-wrap: wrap;
     }
 
-    @media (max-width: 768px) {
-      .checkout-container {
-        flex-direction: column;
-        border-radius: 0;
-        box-shadow: none;
-      }
+    .checkout-left { 
+      flex: 1; 
+      min-width: 300px;
+      background: white;
+      padding: 35px;
+      border-radius: 16px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
     }
 
-    /* Snapsnicker Brand Header */
-    .checkout-header {
+    .checkout-right { 
+      flex: 0 0 400px;
+      min-width: 300px;
+    }
+
+    .order-summary-card {
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+      margin-bottom: 20px;
+    }
+
+    .trust-badges {
+      background: white;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    .trust-badges-title {
+      font-size: 0.9rem;
+      color: #6b7280;
+      margin-bottom: 15px;
+      font-weight: 600;
+    }
+
+    .badges-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .badge-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 12px;
+      background: #f9fafb;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .badge-icon {
+      font-size: 1.8rem;
+    }
+
+    .badge-text {
+      font-size: 0.75rem;
+      color: #374151;
+      font-weight: 600;
+      text-align: center;
+      line-height: 1.3;
+    }
+
+    h2 { 
+      font-size: 1.6rem; 
+      font-weight: 700; 
+      margin-bottom: 25px; 
+      color: #111827;
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 30px;
-      padding-bottom: 20px;
-      border-bottom: 2px solid #f3f4f6;
+      gap: 10px;
     }
 
-    .checkout-header img {
-      height: 40px;
-      width: auto;
+    h2::before {
+      content: "🛒";
+      font-size: 1.4rem;
     }
 
-    .checkout-header h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
+    h3 { 
+      font-size: 1.1rem; 
+      font-weight: 700; 
+      margin-bottom: 18px; 
       color: #111827;
-      margin: 0;
     }
 
-    @media (max-width: 768px) {
-      .checkout-header {
-        padding: 20px;
-        margin-bottom: 0;
-        background: #fff;
-        position: sticky;
-        top: 0;
-        z-index: 100;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-      }
-
-      .checkout-header img {
-        height: 32px;
-      }
-
-      .checkout-header h1 {
-        font-size: 1.25rem;
-      }
+    label { 
+      display: block; 
+      font-size: 0.9rem; 
+      font-weight: 600; 
+      margin: 16px 0 8px; 
+      color: #374151;
     }
-
-    .checkout-left { flex: 1.2; padding: 40px; border-right: 1px solid #e5e7eb; }
-    .checkout-right { flex: 0.8; padding: 40px; background: #fafafa; }
-
-    @media (max-width: 768px) {
-      .checkout-left, .checkout-right {
-        flex: 1;
-        padding: 20px;
-        border-right: none;
-      }
-
-      .checkout-right {
-        background: #fff;
-        order: -1;
-        border-bottom: 8px solid #f3f5f7;
-      }
-    }
-
-    h2 { font-size: 1.8rem; font-weight: 600; margin-bottom: 25px; color: #111827; letter-spacing: -0.3px; }
-    h3 { font-size: 1.2rem; font-weight: 600; margin-bottom: 15px; color: #111827; }
-
-    @media (max-width: 768px) {
-      h2 { font-size: 1.4rem; margin-bottom: 20px; }
-      h3 { font-size: 1.1rem; margin-bottom: 12px; }
-    }
-
-    label { display: block; font-size: 0.95rem; font-weight: 500; margin: 14px 0 6px; color: #111827; }
 
     input, textarea {
       width: 100%;
-      padding: 12px 14px;
-      border: 1.5px solid #d1d5db;
-      border-radius: 12px;
-      font-size: 1rem;
-      background: #fff;
+      padding: 13px 16px;
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      background: #f9fafb;
       transition: all 0.2s ease;
+      font-family: 'Inter', sans-serif;
     }
 
     input:focus, textarea:focus {
-      border: 2px solid #0f172a;
+      border: 2px solid #667eea;
       outline: none;
-      box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.1);
+      background: white;
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
     }
 
-    textarea { resize: vertical; min-height: 80px; font-family: 'Inter', sans-serif; }
+    textarea { resize: vertical; min-height: 90px; }
 
     .custom-select { position: relative; width: 100%; }
 
     .select-box {
-      border: 1.5px solid #d1d5db;
-      border-radius: 12px;
-      padding: 12px 14px;
-      background: #fff;
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 13px 16px;
+      background: #f9fafb;
       cursor: pointer;
-      font-size: 1rem;
+      font-size: 0.95rem;
       transition: all 0.2s ease;
     }
 
     .select-box:focus, .select-box.active {
-      border: 2px solid #0f172a;
-      outline: none;
-      box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.1);
+      border: 2px solid #667eea;
+      background: white;
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
     }
 
-    .select-search {
-      width: 100%;
-      padding: 10px 14px;
-      border: none;
-      border-bottom: 1px solid #e5e7eb;
-      font-size: 0.95rem;
-      outline: none;
-    }
-
-    .select-options {
-      display: none;
+    .options {
       position: absolute;
-      top: calc(100% + 4px);
+      top: 110%;
       left: 0;
       width: 100%;
-      max-height: 220px;
-      overflow-y: auto;
       background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-      z-index: 1000;
-    }
-
-    .select-options.active { display: block; }
-
-    .select-option {
-      padding: 12px 14px;
-      cursor: pointer;
-      transition: background 0.15s ease;
-      font-size: 0.95rem;
-    }
-
-    .select-option:hover { background: #f9fafb; }
-    .select-option.hidden { display: none; }
-
-    .order-summary { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-
-    .order-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 0;
-      font-size: 1rem;
-    }
-
-    .order-item:not(:last-child) { border-bottom: 1px solid #f3f4f6; }
-    .order-item span:first-child { color: #6b7280; font-weight: 500; }
-    .order-item span:last-child { color: #111827; font-weight: 600; }
-
-    .order-total {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px 0;
-      margin-top: 8px;
-      border-top: 2px solid #e5e7eb;
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: #111827;
-    }
-
-    .discount-box {
-      background: #f9fafb;
-      border-radius: 12px;
-      padding: 15px;
-      margin-bottom: 20px;
-      border: 1.5px dashed #d1d5db;
-    }
-
-    .discount-box input { margin-bottom: 10px; border-radius: 8px; }
-
-    .discount-box button {
-      width: 100%;
-      padding: 10px;
-      background: #111827;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s ease;
-    }
-
-    .discount-box button:hover { background: #1f2937; }
-
-    .pay-btn {
-      width: 100%;
-      padding: 16px;
-      background: #10b981;
-      color: #fff;
-      border: none;
-      border-radius: 12px;
-      font-size: 1.1rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      margin-top: 20px;
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-    }
-
-    .pay-btn:hover { background: #059669; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4); }
-    .pay-btn:disabled { background: #d1d5db; cursor: not-allowed; }
-
-    .payment-methods { 
-      display: flex; 
-      flex-wrap: wrap; 
-      gap: 10px; 
-      margin: 15px 0 20px;
-    }
-
-    .method-btn {
-      flex: 1;
-      min-width: 120px;
-      padding: 14px 20px;
       border: 2px solid #e5e7eb;
       border-radius: 12px;
-      text-align: center;
-      font-weight: 600;
-      font-size: 0.95rem;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      background: #fff;
-      color: #6b7280;
-    }
-
-    @media (max-width: 768px) {
-      .method-btn {
-        min-width: calc(50% - 5px);
-        padding: 12px 16px;
-        font-size: 0.9rem;
-      }
-    }
-
-    .method-btn:hover { border-color: #0f172a; color: #0f172a; }
-
-    .method-btn.selected {
-      border-color: #10b981;
-      background: #ecfdf5;
-      color: #10b981;
-      font-weight: 700;
-    }
-
-    /* COD Confirmation Box */
-    .cod-confirmation-box {
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      max-height: 250px;
+      overflow-y: auto;
       display: none;
-      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-      border: 2px solid #fbbf24;
-      border-radius: 12px;
-      padding: 20px;
-      margin: 15px 0;
-      animation: slideDown 0.3s ease;
+      z-index: 10;
+      animation: fadeIn 0.2s ease;
     }
 
-    .cod-confirmation-box.active {
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .option { 
+      padding: 12px 16px; 
+      font-size: 0.9rem; 
+      cursor: pointer; 
+      transition: 0.15s;
+    }
+    
+    .option:hover { background: #f3f4f6; }
+
+    .search-box { 
+      border-bottom: 2px solid #e5e7eb; 
+      padding: 10px; 
+      background: #f9fafb;
+      position: sticky;
+      top: 0;
+    }
+    
+    .search-box input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      background: white;
+    }
+
+    .discount-box { 
+      display: flex; 
+      border: 2px solid #e5e7eb; 
+      border-radius: 10px; 
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    
+    .discount-box input { 
+      flex: 1; 
+      border: none; 
+      padding: 13px 16px;
+      background: #f9fafb;
+    }
+    
+    .discount-box button { 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff; 
+      font-weight: 600; 
+      border: none; 
+      width: 120px; 
+      cursor: pointer; 
+      transition: 0.3s;
+    }
+    
+    .discount-box button:hover { 
+      opacity: 0.9;
+      transform: scale(1.02);
+    }
+
+    .discount-message {
+      margin-top: 10px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      display: none;
+      font-weight: 500;
+    }
+    
+    .discount-message.success { 
+      background: #d1fae5; 
+      color: #065f46; 
       display: block;
+      border: 1px solid #10b981;
+    }
+    
+    .discount-message.error { 
+      background: #fee2e2; 
+      color: #dc2626; 
+      display: block;
+      border: 1px solid #ef4444;
     }
 
-    @keyframes slideDown {
-      from {
-        opacity: 0;
-        transform: translateY(-10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+    .pay-btn { 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff; 
+      border: none; 
+      width: 100%; 
+      padding: 18px; 
+      border-radius: 12px; 
+      font-size: 1.05rem; 
+      font-weight: 700; 
+      cursor: pointer; 
+      transition: 0.3s;
+      margin-top: 25px;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .pay-btn:hover { 
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(102, 126, 234, 0.5);
+    }
+    
+    .pay-btn:disabled { 
+      background: #9ca3af; 
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
     }
 
-    .cod-confirmation-header {
+    .payment-methods { 
+      display: grid; 
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 10px;
+    }
+    
+    .method-btn { 
+      text-align: center; 
+      padding: 16px 12px; 
+      border: 2px solid #e5e7eb; 
+      border-radius: 10px; 
+      font-size: 0.9rem; 
+      cursor: pointer; 
+      transition: 0.2s ease; 
+      font-weight: 600; 
+      background: #f9fafb;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 12px;
+      gap: 6px;
+    }
+    
+    .method-btn:hover {
+      border-color: #667eea;
+      background: white;
+    }
+    
+    .method-btn.active { 
+      border: 3px solid #667eea; 
+      background: #f0f4ff;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
 
-    .cod-confirmation-icon {
+    .method-icon {
       font-size: 1.5rem;
     }
 
-    .cod-confirmation-title {
-      font-size: 1.1rem;
-      font-weight: 700;
+    .cod-info {
+      display: none;
+      margin-top: 15px;
+      padding: 16px;
+      background: #fffbeb;
+      border: 2px solid #fbbf24;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      line-height: 1.6;
       color: #92400e;
     }
 
-    .cod-confirmation-message {
-      font-size: 0.95rem;
+    .cod-info.active {
+      display: block;
+    }
+
+    .cod-info strong {
       color: #78350f;
+      font-size: 0.9rem;
+    }
+
+    .cod-breakdown {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #fbbf24;
+      display: flex;
+      justify-content: space-between;
+      font-weight: 600;
+    }
+
+    .order-item { 
+      display: flex; 
+      justify-content: space-between; 
+      padding: 12px 0; 
+      font-size: 0.9rem; 
+      border-bottom: 1px solid #f3f4f6;
+    }
+    
+    .order-item:last-child { border-bottom: none; }
+    .order-item span:first-child { color: #6b7280; font-weight: 500; }
+    .order-item span:last-child { font-weight: 700; color: #111827; }
+
+    .order-total { 
+      display: flex; 
+      justify-content: space-between; 
+      padding-top: 18px; 
+      margin-top: 18px; 
+      font-size: 1.3rem; 
+      font-weight: 800; 
+      border-top: 3px solid #667eea;
+      color: #111827;
+    }
+
+    .cart-items { 
+      max-height: 350px; 
+      overflow-y: auto; 
+      margin-bottom: 18px;
+      padding-right: 5px;
+    }
+
+    .cart-items::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .cart-items::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+
+    .cart-items::-webkit-scrollbar-thumb {
+      background: #667eea;
+      border-radius: 10px;
+    }
+
+    .cart-product {
+      display: flex;
+      gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid #f3f4f6;
+      align-items: center;
+    }
+
+    .cart-product:last-child { border-bottom: none; }
+
+    .cart-product img {
+      width: 70px;
+      height: 70px;
+      object-fit: cover;
+      border-radius: 10px;
+      background: #f5f5f5;
+      border: 2px solid #e5e7eb;
+    }
+
+    .cart-product-details { flex: 1; }
+
+    .cart-product-title {
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: #111827;
+      margin-bottom: 4px;
+    }
+
+    .cart-product-variant { 
+      font-size: 0.8rem; 
+      color: #6b7280;
+      font-weight: 500;
+    }
+    
+    .cart-product-price { 
+      font-weight: 700; 
+      font-size: 1rem; 
+      color: #667eea;
+    }
+
+    .error-message {
+      background: #fee2e2;
+      color: #dc2626;
+      padding: 14px 18px;
+      border-radius: 10px;
+      margin-bottom: 18px;
+      font-size: 0.9rem;
+      display: none;
       line-height: 1.6;
+      border: 2px solid #ef4444;
+      font-weight: 500;
+    }
+    
+    .error-message.active { display: block; }
+
+    .back-link {
+      display: inline-block;
+      margin-top: 10px;
+      color: #667eea;
+      text-decoration: underline;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .thank-you-screen {
+      display: none;
+      text-align: center;
+      padding: 50px 40px;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      max-width: 650px;
+      margin: 40px auto;
+    }
+    
+    .thank-you-screen.active { display: block; }
+
+    .success-icon {
+      width: 100px;
+      height: 100px;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 30px;
+      color: white;
+      font-size: 50px;
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+      animation: successPulse 1.5s ease infinite;
+    }
+
+    @keyframes successPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .thank-you-screen h2 {
+      font-size: 2rem;
+      color: #111827;
       margin-bottom: 15px;
     }
 
-    .cod-amount-breakdown {
-      background: #fff;
-      border-radius: 8px;
-      padding: 15px;
-      margin-top: 12px;
-    }
-
-    .cod-amount-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 0;
-      font-size: 0.95rem;
-    }
-
-    .cod-amount-row:not(:last-child) {
-      border-bottom: 1px solid #fef3c7;
-    }
-
-    .cod-amount-row.highlight {
-      font-weight: 700;
-      color: #10b981;
-      font-size: 1.05rem;
-      padding-top: 12px;
-      border-top: 2px solid #fbbf24;
-    }
-
-    .cod-amount-row.total {
-      font-weight: 700;
-      color: #92400e;
-      font-size: 1.1rem;
-      padding-top: 12px;
-      border-top: 2px solid #fbbf24;
-    }
-
-    /* Trust Badges */
-    .trust-badges {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
-      justify-content: center;
+    .order-id-display {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: #667eea;
+      margin: 25px 0;
       padding: 20px;
-      background: #f9fafb;
+      background: #f0f4ff;
       border-radius: 12px;
-      margin: 20px 0;
+      border: 2px dashed #667eea;
     }
 
-    .trust-badge {
+    .thank-you-buttons {
       display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: #374151;
-    }
-
-    .trust-badge-icon {
-      font-size: 1.2rem;
-    }
-
-    @media (max-width: 768px) {
-      .trust-badges {
-        gap: 12px;
-        padding: 15px;
-      }
-
-      .trust-badge {
-        font-size: 0.8rem;
-        gap: 6px;
-      }
-    }
-
-    /* Security Badge */
-    .security-badge {
-      display: flex;
-      align-items: center;
+      gap: 15px;
+      margin-top: 30px;
+      flex-wrap: wrap;
       justify-content: center;
-      gap: 8px;
-      padding: 12px;
-      background: #ecfdf5;
-      border-radius: 8px;
-      margin-top: 15px;
-      font-size: 0.85rem;
-      color: #065f46;
-      font-weight: 600;
+    }
+
+    .thank-you-btn {
+      flex: 1;
+      min-width: 200px;
+      padding: 16px 30px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: 0.3s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(102, 126, 234, 0.5);
+    }
+
+    .btn-secondary {
+      background: white;
+      color: #667eea;
+      border: 2px solid #667eea;
+    }
+
+    .btn-secondary:hover {
+      background: #f0f4ff;
+      transform: translateY(-2px);
     }
 
     .loading-overlay {
@@ -428,28 +607,28 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.7);
-      z-index: 10000;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
       align-items: center;
       justify-content: center;
     }
-
+    
     .loading-overlay.active { display: flex; }
 
     .loading-content {
-      background: #fff;
+      text-align: center;
+      background: white;
       padding: 40px;
       border-radius: 16px;
-      text-align: center;
-      max-width: 300px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
     }
 
     .spinner {
-      border: 4px solid #f3f4f6;
-      border-top: 4px solid #10b981;
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #667eea;
       border-radius: 50%;
-      width: 50px;
-      height: 50px;
+      width: 60px;
+      height: 60px;
       animation: spin 1s linear infinite;
       margin: 0 auto 20px;
     }
@@ -459,793 +638,266 @@
       100% { transform: rotate(360deg); }
     }
 
-    .thank-you-screen {
-      display: none;
-      text-align: center;
-      padding: 60px 40px;
-      background: #fff;
-      border-radius: 20px;
-      max-width: 600px;
-      margin: 0 auto;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-    }
-
-    .thank-you-screen.active { display: block; }
-
-    .success-icon {
-      width: 80px;
-      height: 80px;
-      background: #10b981;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 24px;
-      font-size: 3rem;
-      color: #fff;
-    }
-
-    .thank-you-title {
-      font-size: 2rem;
-      font-weight: 700;
-      color: #111827;
-      margin-bottom: 16px;
-    }
-
-    .order-id-box {
-      background: #f9fafb;
-      border-radius: 12px;
-      padding: 20px;
-      margin: 24px 0;
-    }
-
-    .error-message {
-      display: none;
-      background: #fee2e2;
-      border: 2px solid #ef4444;
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 20px;
-      color: #991b1b;
-      font-weight: 600;
-    }
-
-    .error-message.active { display: block; }
-
     .hidden { display: none !important; }
 
+    /* Mobile Responsive */
     @media (max-width: 768px) {
-      .thank-you-screen {
-        padding: 40px 20px;
-        border-radius: 0;
-        min-height: 100vh;
+      body { padding: 10px; }
+      
+      .checkout-header {
+        padding: 15px 20px;
+        flex-direction: column;
+        gap: 12px;
       }
 
-      .thank-you-title {
+      .brand-name {
+        font-size: 1.3rem;
+      }
+
+      .secure-badge {
+        font-size: 0.75rem;
+        padding: 6px 12px;
+      }
+
+      .checkout-container { 
+        flex-direction: column;
+      }
+      
+      .checkout-left { 
+        padding: 25px 20px;
+      }
+
+      .checkout-right {
+        flex: 1;
+      }
+
+      .order-summary-card {
+        padding: 20px;
+      }
+      
+      .payment-methods {
+        grid-template-columns: 1fr;
+      }
+
+      .badges-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      h2 {
+        font-size: 1.4rem;
+      }
+
+      .thank-you-screen {
+        padding: 30px 20px;
+        margin: 20px auto;
+      }
+
+      .order-id-display {
+        font-size: 1.6rem;
+        padding: 15px;
+      }
+
+      .thank-you-buttons {
+        flex-direction: column;
+      }
+
+      .thank-you-btn {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .brand-logo img {
+        height: 35px;
+      }
+
+      .brand-name {
+        font-size: 1.1rem;
+      }
+
+      .badges-grid {
+        gap: 8px;
+      }
+
+      .badge-item {
+        padding: 10px 8px;
+      }
+
+      .badge-icon {
         font-size: 1.5rem;
       }
-    }
 
-    /* Two Column Layout for Inputs */
-    .input-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 15px;
-    }
-
-    @media (max-width: 768px) {
-      .input-row {
-        grid-template-columns: 1fr;
-        gap: 0;
-      }
-    }
-
-    .input-group {
-      flex: 1;
-    }
-
-    /* Additional Mobile Optimizations */
-    @media (max-width: 768px) {
-      .order-summary {
-        margin-bottom: 15px;
-      }
-
-      .discount-box {
-        margin-bottom: 15px;
-      }
-
-      label {
-        margin: 12px 0 6px;
-        font-size: 0.9rem;
-      }
-
-      input, textarea, .select-box {
-        padding: 11px 12px;
-        font-size: 0.95rem;
-      }
-
-      .pay-btn {
-        padding: 14px;
-        font-size: 1rem;
-        position: sticky;
-        bottom: 0;
-        margin-top: 15px;
-        box-shadow: 0 -2px 10px rgba(0,0,0,0.1), 0 4px 12px rgba(16, 185, 129, 0.3);
-      }
-    }
-
-    .form-section {
-      margin-bottom: 30px;
-    }
-
-    @media (max-width: 768px) {
-      .form-section {
-        margin-bottom: 25px;
+      .badge-text {
+        font-size: 0.7rem;
       }
     }
   </style>
 </head>
 <body>
-  <div class="checkout-container">
-    <div class="checkout-left">
-      <!-- Snapsnicker Brand Header -->
-      <div class="checkout-header">
-        <img src="/assets/images/logo.png" alt="Snapsnicker Logo" />
-        <h1>Snapsnicker</h1>
+  <div class="main-container">
+    <div class="checkout-header">
+      <div class="brand-logo">
+        <img src="/assets/images/logo.png" alt="Snapsnicker" onerror="this.style.display='none'">
+        <div class="brand-name">Snapsnicker</div>
       </div>
+      <div class="secure-badge">Secure Checkout</div>
+    </div>
 
-      <!-- Main Checkout Form -->
-      <div id="mainCheckout">
-        <div id="errorMessage" class="error-message"></div>
+    <div id="mainCheckout">
+      <div class="checkout-container">
+        <div class="checkout-left">
+          <h2>Checkout Details</h2>
 
-        <form id="checkoutForm" onsubmit="event.preventDefault();">
-          <div class="form-section">
-            <h2>Shipping Information</h2>
+          <div class="error-message" id="errorMessage"></div>
 
-            <label>Email</label>
-            <input type="email" id="email" placeholder="john.doe@example.com" required />
+          <form id="customerForm">
+            <label>Email Address</label>
+            <input type="email" id="email" placeholder="example@email.com" autocomplete="email" required />
 
             <label>Full Name</label>
-            <input type="text" id="fullName" placeholder="John Doe" required />
+            <input type="text" id="fullName" placeholder="Enter your name" autocomplete="name" required />
 
             <label>Phone Number</label>
-            <input type="tel" id="phone" placeholder="+91 98765 43210" pattern="[0-9+\s-]+" required />
+            <div style="display: flex; gap: 8px;">
+              <input type="text" value="+91" readonly style="width:80px; text-align:center; background:#e5e7eb; font-weight:700; border-radius:10px; border:2px solid #d1d5db;" />
+              <input type="tel" id="phone" placeholder="Enter phone number" maxlength="10" autocomplete="tel" style="flex:1;" required />
+            </div>
 
             <label>Address</label>
-            <textarea id="address" placeholder="Street address, apartment, suite, etc." required></textarea>
+            <textarea id="address" placeholder="Street Address" autocomplete="street-address" required></textarea>
 
-            <div class="input-row">
-              <div class="input-group">
-                <label>City</label>
-                <input type="text" id="city" placeholder="Mumbai" required />
-              </div>
+            <label>City</label>
+            <input type="text" id="city" placeholder="City" autocomplete="address-level2" required />
 
-              <div class="input-group">
-                <label>State</label>
+            <div style="display: flex; gap: 10px; align-items: flex-start;">
+              <div style="flex: 1;">
+                <label>State / Union Territory</label>
+                <input type="text" id="stateInput" name="address-level1" autocomplete="address-level1" style="display:none;" />
                 <div class="custom-select">
-                  <div class="select-box" id="stateSelectBox" tabindex="0">Select state</div>
-                  <div class="select-options" id="stateOptions"></div>
+                  <div class="select-box" id="selectBox" tabindex="0" aria-haspopup="listbox" aria-expanded="false">Select</div>
+                  <div class="options" id="options" role="listbox" aria-label="States">
+                    <div class="search-box"><input type="text" id="searchInput" placeholder="Search state (type name or code)" aria-label="Search states" /></div>
+                  </div>
                 </div>
-                <input type="hidden" id="stateInput" required />
+              </div>
+              <div style="flex: 1;">
+                <label>Pincode</label>
+                <input type="text" id="postalCode" placeholder="243001" autocomplete="postal-code" pattern="[0-9]{6}" required />
               </div>
             </div>
 
-            <label>Pincode</label>
-            <input type="text" id="postalCode" placeholder="400001" autocomplete="postal-code" pattern="[0-9]{6}" required />
-          </div>
+            <label>Discount Code (Optional)</label>
+            <div class="discount-box">
+              <input type="text" id="discountCode" placeholder="Enter discount code" />
+              <button type="button" onclick="applyDiscount()">Apply</button>
+            </div>
+            <div id="discountMessage" class="discount-message"></div>
 
-          <!-- Trust Badges -->
-          <div class="trust-badges">
-            <div class="trust-badge">
-              <span class="trust-badge-icon">🔒</span>
-              <span>Secure Checkout</span>
-            </div>
-            <div class="trust-badge">
-              <span class="trust-badge-icon">✓</span>
-              <span>100% Safe</span>
-            </div>
-            <div class="trust-badge">
-              <span class="trust-badge-icon">🚚</span>
-              <span>Fast Delivery</span>
-            </div>
-            <div class="trust-badge">
-              <span class="trust-badge-icon">↩️</span>
-              <span>Easy Returns</span>
-            </div>
-          </div>
-
-          <div class="form-section">
             <label>Payment Method</label>
             <div class="payment-methods">
-              <div class="method-btn" data-method="upi">UPI</div>
-              <div class="method-btn" data-method="card">Credit Card</div>
-              <div class="method-btn" data-method="card">Debit Card</div>
-              <div class="method-btn" data-method="netbanking">Net Banking</div>
-              <div class="method-btn" data-method="cod">Cash on Delivery</div>
+              <div class="method-btn" data-method="upi">
+                <span class="method-icon">📱</span>
+                UPI
+              </div>
+              <div class="method-btn" data-method="card">
+                <span class="method-icon">💳</span>
+                Credit Card
+              </div>
+              <div class="method-btn" data-method="card">
+                <span class="method-icon">💳</span>
+                Debit Card
+              </div>
+              <div class="method-btn" data-method="netbanking">
+                <span class="method-icon">🏦</span>
+                Net Banking
+              </div>
+              <div class="method-btn" data-method="cod">
+                <span class="method-icon">💵</span>
+                Cash on Delivery
+              </div>
             </div>
 
-            <!-- COD Confirmation Box -->
-            <div class="cod-confirmation-box" id="codConfirmationBox">
-              <div class="cod-confirmation-header">
-                <span class="cod-confirmation-icon">⚡</span>
-                <span class="cod-confirmation-title">COD Order Confirmation</span>
-              </div>
-              <p class="cod-confirmation-message">
-                To confirm your COD order and avoid fake bookings, please pay a small ₹300 confirmation amount now. 
-                The remaining amount will be collected safely on delivery. This step helps us process genuine orders 
-                faster and ensures quick dispatch 🚚.
+            <div class="cod-info" id="codInfo">
+              <strong>🚚 Cash on Delivery Selected</strong>
+              <p style="margin-top: 8px;">
+                To confirm your COD order and avoid fake bookings, please pay a small <strong>₹300</strong> confirmation amount now. The remaining amount will be collected safely on delivery. This step helps us process genuine orders faster and ensures quick dispatch 🚚.
               </p>
-              <div class="cod-amount-breakdown">
-                <div class="cod-amount-row">
-                  <span>Total Order Value:</span>
-                  <span id="codTotalAmount">₹0</span>
-                </div>
-                <div class="cod-amount-row highlight">
-                  <span>Pay Now (Confirmation):</span>
-                  <span>₹300</span>
-                </div>
-                <div class="cod-amount-row total">
-                  <span>Pay on Delivery:</span>
-                  <span id="codRemainingAmount">₹0</span>
-                </div>
+              <div class="cod-breakdown">
+                <span>Pay Now:</span>
+                <span style="color: #667eea;">₹300</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-top: 8px;">
+                <span>Pay on Delivery:</span>
+                <span id="codRemainingAmount" style="color: #059669;">₹0</span>
               </div>
             </div>
 
-            <!-- Security Badge -->
-            <div class="security-badge">
-              <span>🔐</span>
-              <span>Your payment information is encrypted and secure</span>
+            <button type="button" class="pay-btn" onclick="handleCheckout()" id="placeOrderBtn">Place Order</button>
+          </form>
+        </div>
+
+        <div class="checkout-right">
+          <div class="order-summary-card">
+            <h3>Order Summary</h3>
+            <div class="cart-items" id="cartItems">
+              <div style="text-align: center; padding: 20px; color: #6b7280;">
+                Loading cart...
+              </div>
+            </div>
+            <div id="priceBreakdown">
+              <div class="order-item">
+                <span>Subtotal</span>
+                <span id="subtotal">₹0</span>
+              </div>
+              <div class="order-item" id="gstRow" style="display: none;">
+                <span>GST (5%)</span>
+                <span id="gst">₹0</span>
+              </div>
+              <div class="order-item" id="prepaidDiscountRow" style="display: none;">
+                <span style="color: #10b981;">Prepaid Discount</span>
+                <span id="prepaidDiscount" style="color: #10b981;">-₹50</span>
+              </div>
+              <div class="order-item" id="discountRow" style="display: none;">
+                <span style="color: #10b981;" id="discountLabel">Discount</span>
+                <span id="discountValue" style="color: #10b981;">-₹0</span>
+              </div>
+            </div>
+            <div class="order-total">
+              <span>Total</span>
+              <span id="total">₹0</span>
             </div>
           </div>
 
-          <button type="button" class="pay-btn" onclick="handleCheckout()">Place Order</button>
-        </form>
-      </div>
-
-      <!-- Thank You Screen -->
-      <div class="thank-you-screen" id="thankYouScreen">
-        <div class="success-icon">✓</div>
-        <h2 class="thank-you-title">Order Placed Successfully!</h2>
-        <p style="color: #6b7280; font-size: 1rem; line-height: 1.6; margin-bottom: 20px;">
-          Your order has been successfully placed.<br />
-          We've sent a confirmation email to <strong id="customerEmail"></strong>
-        </p>
-        <div class="order-id-box">
-          <p style="color: #6b7280; font-size: 0.9rem; margin-bottom: 8px;">Order ID</p>
-          <p style="font-size: 1.3rem; font-weight: 700; color: #111827;" id="displayOrderId"></p>
+          <div class="trust-badges">
+            <div class="trust-badges-title">Why Shop With Us?</div>
+            <div class="badges-grid">
+              <div class="badge-item">
+                <div class="badge-icon">🔒</div>
+                <div class="badge-text">Secure Payment</div>
+              </div>
+              <div class="badge-item">
+                <div class="badge-icon">✓</div>
+                <div class="badge-text">100% Genuine</div>
+              </div>
+              <div class="badge-item">
+                <div class="badge-icon">🚚</div>
+                <div class="badge-text">Fast Delivery</div>
+              </div>
+              <div class="badge-item">
+                <div class="badge-icon">↩️</div>
+                <div class="badge-text">Easy Returns</div>
+              </div>
+            </div>
+          </div>
         </div>
-        <p style="color: #6b7280; font-size: 0.95rem; line-height: 1.6;">
-          You'll receive updates about your order status via email and SMS.
-        </p>
       </div>
     </div>
 
-    <div class="checkout-right">
-      <h3>Order Summary</h3>
-      <div class="order-summary">
-        <div class="order-item" id="cartItemsRow">
-          <span>Cart Items</span>
-          <span id="cartItemsCount">0</span>
-        </div>
-        <div class="order-item">
-          <span>Subtotal</span>
-          <span id="subtotal">₹0</span>
-        </div>
-        <div class="order-item">
-          <span>Shipping</span>
-          <span id="shipping">Free</span>
-        </div>
-        <div class="order-item" id="gstRow" style="display: none;">
-          <span>GST (5%)</span>
-          <span id="gst">₹0</span>
-        </div>
-        <div class="order-item" id="discountRow" style="display: none;">
-          <span style="color: #10b981;">Discount Applied</span>
-          <span id="discountAmount" style="color: #10b981;">-₹0</span>
-        </div>
-        <div class="order-total">
-          <span>Total</span>
-          <span id="total">₹0</span>
-        </div>
+    <div id="thankYouScreen" class="thank-you-screen">
+      <div class="success-icon">✓</div>
+      <h2>Thank You for Your Order! 🎉</h2>
+      <p style="font-size: 1rem; color: #6b7280; margin: 15px 0;">Your order has been successfully placed.</p>
+      <div class="order-id-display">
+        Order ID: <span id="displayOrderId"></span>
       </div>
-
-      <div class="discount-box">
-        <label>Have a discount code?</label>
-        <input type="text" id="discountCode" placeholder="Enter discount code" />
-        <button type="button" onclick="applyDiscount()">Apply Discount</button>
-        <div id="discountMessage"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Loading Overlay -->
-  <div class="loading-overlay" id="loadingOverlay">
-    <div class="loading-content">
-      <div class="spinner"></div>
-      <p style="font-weight: 600; color: #111827;">Processing your order...</p>
-    </div>
-  </div>
-
-  <script>
-    // ===== CONFIGURATION =====
-    const SUPABASE_URL = 'https://ihbwdypumlqfakllqvgs.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImloYndkeXB1bWxxZmFrbGxxdmdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzE2ODI1NTIsImV4cCI6MjA0NzI1ODU1Mn0.xE9IYIrEFCXF_Pw74c9X9u2XQVxwWEa-PKkqWR9nlIk';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    // ===== STATE VARIABLES =====
-    let cartData = null;
-    let storeInfo = {};
-    let appliedDiscount = null;
-    let selectedPaymentMethod = null;
-    let isCODOrder = false;
-
-    // ===== INDIAN STATES =====
-    const states = [
-      'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
-      'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka',
-      'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram',
-      'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana',
-      'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
-      'Andaman and Nicobar Islands', 'Chandigarh', 'Dadra and Nagar Haveli and Daman and Diu',
-      'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry'
-    ];
-
-    const codeMap = {
-      'UP': 'Uttar Pradesh', 'MH': 'Maharashtra', 'DL': 'Delhi', 'KA': 'Karnataka',
-      'TN': 'Tamil Nadu', 'WB': 'West Bengal', 'GJ': 'Gujarat', 'RJ': 'Rajasthan',
-      'KL': 'Kerala', 'HR': 'Haryana', 'PB': 'Punjab', 'AP': 'Andhra Pradesh',
-      'TG': 'Telangana', 'BR': 'Bihar', 'MP': 'Madhya Pradesh', 'OR': 'Odisha',
-      'AS': 'Assam', 'JH': 'Jharkhand', 'CG': 'Chhattisgarh', 'UK': 'Uttarakhand',
-      'HP': 'Himachal Pradesh', 'GA': 'Goa', 'TR': 'Tripura', 'ML': 'Meghalaya',
-      'MN': 'Manipur', 'NL': 'Nagaland', 'MZ': 'Mizoram', 'AR': 'Arunachal Pradesh',
-      'SK': 'Sikkim', 'JK': 'Jammu and Kashmir', 'LA': 'Ladakh', 'CH': 'Chandigarh',
-      'AN': 'Andaman and Nicobar Islands', 'DD': 'Dadra and Nagar Haveli and Daman and Diu',
-      'LD': 'Lakshadweep', 'PY': 'Puducherry'
-    };
-
-    // ===== CUSTOM SELECT FUNCTIONALITY (ORIGINAL) =====
-    function setupCustomSelect() {
-      const box = document.getElementById('stateSelectBox');
-      const optionsDiv = document.getElementById('stateOptions');
-      const hiddenInput = document.getElementById('stateInput');
-
-      const searchInput = document.createElement('input');
-      searchInput.type = 'text';
-      searchInput.className = 'select-search';
-      searchInput.placeholder = 'Search state (type name or code)';
-      searchInput.id = 'searchInput';
-      optionsDiv.appendChild(searchInput);
-
-      states.forEach(state => {
-        const opt = document.createElement('div');
-        opt.className = 'select-option';
-        opt.textContent = state;
-        opt.onclick = () => selectOption(state);
-        optionsDiv.appendChild(opt);
-      });
-
-      function selectOption(value) {
-        hiddenInput.value = value;
-        box.textContent = value;
-        box.classList.remove('active');
-        optionsDiv.classList.remove('active');
-        searchInput.value = '';
-        Array.from(optionsDiv.querySelectorAll('.select-option')).forEach(o => o.classList.remove('hidden'));
-      }
-
-      box.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const isActive = optionsDiv.classList.contains('active');
-        document.querySelectorAll('.select-options.active').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.select-box.active').forEach(el => el.classList.remove('active'));
-
-        if (!isActive) {
-          optionsDiv.classList.add('active');
-          box.classList.add('active');
-          searchInput.focus();
-        }
-      });
-
-      searchInput.addEventListener('input', (e) => {
-        const filter = e.target.value.trim();
-        const options = Array.from(optionsDiv.querySelectorAll('.select-option'));
-
-        if (filter === '') {
-          options.forEach(o => o.classList.remove('hidden'));
-          return;
-        }
-
-        const f = filter.toLowerCase();
-
-        options.forEach(option => {
-          const text = option.textContent.toLowerCase();
-
-          if (text.includes(f)) {
-            option.classList.remove('hidden');
-            return;
-          }
-
-          if (f.length >= 2 && f.length <= 3) {
-            const mapped = codeMap[filter.toUpperCase()];
-            if (mapped && text === mapped.toLowerCase()) {
-              option.classList.remove('hidden');
-              return;
-            }
-          }
-
-          option.classList.add('hidden');
-        });
-      });
-
-      searchInput.addEventListener('click', (e) => e.stopPropagation());
-
-      document.addEventListener('click', () => {
-        optionsDiv.classList.remove('active');
-        box.classList.remove('active');
-      });
-    }
-
-    // ===== PAYMENT METHOD SELECTION =====
-    document.addEventListener('click', (e) => {
-      if (e.target.classList.contains('method-btn')) {
-        document.querySelectorAll('.method-btn').forEach(btn => btn.classList.remove('selected'));
-        e.target.classList.add('selected');
-        selectedPaymentMethod = e.target.getAttribute('data-method');
-
-        const codBox = document.getElementById('codConfirmationBox');
-        if (selectedPaymentMethod === 'cod') {
-          isCODOrder = true;
-          codBox.classList.add('active');
-          updateCODAmounts();
-        } else {
-          isCODOrder = false;
-          codBox.classList.remove('active');
-        }
-
-        console.log('✓ Payment method selected:', selectedPaymentMethod, '| COD Order:', isCODOrder);
-      }
-    });
-
-    // ===== COD AMOUNT CALCULATION =====
-    function updateCODAmounts() {
-      if (!cartData) return;
-
-      const total = calculateTotal();
-      const confirmationAmount = 300;
-      const remainingAmount = total - confirmationAmount;
-
-      document.getElementById('codTotalAmount').textContent = `₹${total}`;
-      document.getElementById('codRemainingAmount').textContent = `₹${remainingAmount}`;
-    }
-
-    // ===== CART MANAGEMENT =====
-    function loadCart() {
-      console.log('📦 Loading cart from localStorage...');
-      const stored = localStorage.getItem('sscheckout_cart');
-
-      if (!stored) {
-        console.warn('⚠️ No cart data found');
-        showError('No cart data found. Please add items to cart first.');
-        return;
-      }
-
-      try {
-        cartData = JSON.parse(stored);
-        console.log('✓ Cart loaded:', cartData);
-
-        if (cartData.store_details) {
-          storeInfo = cartData.store_details;
-          console.log('✓ Store info loaded:', storeInfo);
-        }
-
-        displayCartSummary();
-      } catch (error) {
-        console.error('❌ Failed to parse cart data:', error);
-        showError('Invalid cart data. Please try again.');
-      }
-    }
-
-    function displayCartSummary() {
-      if (!cartData || !cartData.cart || !cartData.cart.products || cartData.cart.products.length === 0) {
-        console.warn('⚠️ Cart is empty');
-        return;
-      }
-
-      const products = cartData.cart.products;
-      const itemCount = products.reduce((sum, p) => sum + (p.quantity || 1), 0);
-      document.getElementById('cartItemsCount').textContent = itemCount;
-
-      updatePriceSummary();
-    }
-
-    function updatePriceSummary() {
-      const subtotal = calculateSubtotal();
-      const shipping = 0;
-      const gst = Math.round(subtotal * 0.05);
-      const discount = appliedDiscount ? appliedDiscount.amount : 0;
-      const total = subtotal + shipping + gst - discount;
-
-      document.getElementById('subtotal').textContent = `₹${subtotal}`;
-      document.getElementById('shipping').textContent = shipping === 0 ? 'Free' : `₹${shipping}`;
-      document.getElementById('gst').textContent = `₹${gst}`;
-      document.getElementById('total').textContent = `₹${total}`;
-
-      document.getElementById('gstRow').style.display = gst > 0 ? 'flex' : 'none';
-
-      if (discount > 0) {
-        document.getElementById('discountRow').style.display = 'flex';
-        document.getElementById('discountAmount').textContent = `-₹${discount}`;
-      } else {
-        document.getElementById('discountRow').style.display = 'none';
-      }
-
-      if (isCODOrder) {
-        updateCODAmounts();
-      }
-    }
-
-    function calculateSubtotal() {
-      if (!cartData || !cartData.cart || !cartData.cart.products) return 0;
-      return cartData.cart.products.reduce((sum, p) => sum + (p.price * (p.quantity || 1)), 0);
-    }
-
-    function calculateTotal() {
-      const subtotal = calculateSubtotal();
-      const gst = Math.round(subtotal * 0.05);
-      const discount = appliedDiscount ? appliedDiscount.amount : 0;
-      return subtotal + gst - discount;
-    }
-
-    // ===== DISCOUNT MANAGEMENT =====
-    function applyDiscount() {
-      const code = document.getElementById('discountCode').value.trim();
-      const messageDiv = document.getElementById('discountMessage');
-
-      if (!code) {
-        messageDiv.innerHTML = '<p style="color: #ef4444; margin-top: 10px; font-size: 0.9rem;">Please enter a discount code</p>';
-        return;
-      }
-
-      const validDiscounts = {
-        'SAVE10': { type: 'percentage', value: 10 },
-        'FLAT100': { type: 'fixed', value: 100 },
-        'WELCOME20': { type: 'percentage', value: 20 }
-      };
-
-      if (validDiscounts[code.toUpperCase()]) {
-        const discount = validDiscounts[code.toUpperCase()];
-        const subtotal = calculateSubtotal();
-
-        if (discount.type === 'percentage') {
-          appliedDiscount = {
-            code: code.toUpperCase(),
-            amount: Math.round((subtotal * discount.value) / 100)
-          };
-        } else {
-          appliedDiscount = {
-            code: code.toUpperCase(),
-            amount: discount.value
-          };
-        }
-
-        messageDiv.innerHTML = `<p style="color: #10b981; margin-top: 10px; font-size: 0.9rem; font-weight: 600;">✓ Discount applied: ${appliedDiscount.code}</p>`;
-        updatePriceSummary();
-      } else {
-        messageDiv.innerHTML = '<p style="color: #ef4444; margin-top: 10px; font-size: 0.9rem;">Invalid discount code</p>';
-      }
-    }
-
-    // ===== FORM VALIDATION =====
-    function validateForm() {
-      const form = document.getElementById('checkoutForm');
-      const inputs = form.querySelectorAll('input[required], textarea[required]');
-
-      for (let input of inputs) {
-        if (!input.value.trim()) {
-          showError(`Please fill in: ${input.previousElementSibling?.textContent || 'required field'}`);
-          input.focus();
-          return false;
-        }
-      }
-
-      if (!selectedPaymentMethod) {
-        showError('Please select a payment method');
-        return false;
-      }
-
-      return true;
-    }
-
-    // ===== CHECKOUT HANDLER =====
-    async function handleCheckout() {
-      console.log('\n🛒 Starting checkout process...');
-
-      if (!validateForm()) {
-        console.warn('⚠️ Form validation failed');
-        return;
-      }
-
-      if (!cartData || !cartData.cart || !cartData.cart.products || cartData.cart.products.length === 0) {
-        showError('Your cart is empty. Please add items before checkout.');
-        return;
-      }
-
-      showLoading(true);
-
-      const formData = {
-        email: document.getElementById('email').value.trim(),
-        fullName: document.getElementById('fullName').value.trim(),
-        phone: document.getElementById('phone').value.trim(),
-        address: document.getElementById('address').value.trim(),
-        city: document.getElementById('city').value.trim(),
-        state: document.getElementById('stateInput').value,
-        postalCode: document.getElementById('postalCode').value.trim()
-      };
-
-      const totalAmount = calculateTotal();
-      const amountToCharge = isCODOrder ? 300 : totalAmount;
-
-      console.log('📋 Form data:', formData);
-      console.log('💰 Total amount:', totalAmount);
-      console.log('💳 Amount to charge:', amountToCharge);
-      console.log('📦 Payment method:', selectedPaymentMethod);
-      console.log('🚚 Is COD Order:', isCODOrder);
-
-      const orderData = {
-        customer: formData,
-        products: cartData.cart.products,
-        pricing: {
-          subtotal: calculateSubtotal(),
-          shipping: 0,
-          gst: Math.round(calculateSubtotal() * 0.05),
-          discount: appliedDiscount ? appliedDiscount.amount : 0,
-          total: totalAmount
-        },
-        payment: {
-          method: selectedPaymentMethod,
-          isCOD: isCODOrder,
-          confirmationAmount: isCODOrder ? 300 : 0,
-          codRemainingAmount: isCODOrder ? (totalAmount - 300) : 0
-        },
-        store: storeInfo,
-        discountCode: appliedDiscount ? appliedDiscount.code : null,
-        timestamp: new Date().toISOString()
-      };
-
-      initiateRazorpayPayment(orderData, amountToCharge);
-    }
-
-    // ===== DATABASE OPERATIONS =====
-    async function saveOrderToDatabase(orderData) {
-      console.log('💾 Saving order to database...');
-
-      try {
-        const { data, error } = await supabase
-          .from('orders')
-          .insert([{
-            customer_email: orderData.customer.email,
-            customer_name: orderData.customer.fullName,
-            customer_phone: orderData.customer.phone,
-            shipping_address: JSON.stringify({
-              address: orderData.customer.address,
-              city: orderData.customer.city,
-              state: orderData.customer.state,
-              postalCode: orderData.customer.postalCode
-            }),
-            products: JSON.stringify(orderData.products),
-            total_amount: orderData.pricing.total,
-            payment_method: orderData.payment.method,
-            is_cod: orderData.payment.isCOD,
-            cod_confirmation_amount: orderData.payment.confirmationAmount,
-            cod_remaining_amount: orderData.payment.codRemainingAmount,
-            discount_code: orderData.discountCode,
-            status: 'pending',
-            created_at: orderData.timestamp
-          }])
-          .select();
-
-        if (error) throw error;
-
-        console.log('✓ Order saved to database:', data);
-        return data[0];
-      } catch (error) {
-        console.error('❌ Database error:', error);
-        throw error;
-      }
-    }
-
-    // ===== RAZORPAY PAYMENT =====
-    function initiateRazorpayPayment(orderData, amountToCharge) {
-      console.log('💳 Initiating Razorpay payment...');
-      showLoading(false);
-
-      const options = {
-        key: storeInfo.razorpay_key_id || 'rzp_test_dummy',
-        amount: amountToCharge * 100,
-        currency: 'INR',
-        name: 'Snapsnicker',
-        description: isCODOrder ? 'COD Confirmation Payment' : 'Order Payment',
-        image: '/assets/images/logo.png',
-        prefill: {
-          name: orderData.customer.fullName,
-          email: orderData.customer.email,
-          contact: orderData.customer.phone
-        },
-        theme: {
-          color: '#10b981'
-        },
-        handler: function(response) {
-          console.log('✓ Payment successful:', response);
-          orderData.payment.razorpay_payment_id = response.razorpay_payment_id;
-          orderData.payment.status = 'completed';
-
-          saveOrderToDatabase(orderData).then((savedOrder) => {
-            showThankYou(savedOrder.id, orderData.customer.email);
-          }).catch((error) => {
-            console.error('❌ Failed to save order after payment:', error);
-            showError('Payment successful but failed to save order. Please contact support with payment ID: ' + response.razorpay_payment_id);
-          });
-        },
-        modal: {
-          ondismiss: function() {
-            console.log('⚠️ Payment cancelled by user');
-            showError('Payment cancelled. Please try again.');
-          }
-        }
-      };
-
-      saveOrderToDatabase(orderData).then(() => {
-        const rzp = new Razorpay(options);
-        rzp.open();
-      }).catch((error) => {
-        console.error('❌ Failed to save order before payment:', error);
-        showError('Failed to initiate payment. Please try again.');
-      });
-    }
-
-    // ===== UI HELPERS =====
-    function showThankYou(orderId, email) {
-      console.log('✅ Showing thank you screen');
-      document.getElementById('mainCheckout').classList.add('hidden');
-      document.getElementById('thankYouScreen').classList.add('active');
-      document.getElementById('displayOrderId').textContent = orderId;
-      document.getElementById('customerEmail').textContent = email;
-
-      localStorage.removeItem('sscheckout_cart');
-      localStorage.removeItem('sscheckout_timestamp');
-    }
-
-    function showLoading(show) {
-      document.getElementById('loadingOverlay').classList.toggle('active', show);
-    }
-
-    function showError(message) {
-      const errorDiv = document.getElementById('errorMessage');
-      errorDiv.innerHTML = message;
-      errorDiv.classList.add('active');
-
-      setTimeout(() => {
-        errorDiv.classList.remove('active');
-      }, 8000);
-
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    // ===== INITIALIZE =====
-    window.addEventListener('DOMContentLoaded', () => {
-      console.log('\n🚀 Initializing Snapsnicker checkout page...');
-      setupCustomSelect();
-      loadCart();
-    });
-
-    window.debugCheckout = function() {
-      console.log('=== DEBUG INFO ===');
-      console.log('localStorage cart:', localStorage.getItem('sscheckout_cart'));
-      console.log('cartData:', cartData);
-      console.log('storeInfo:', storeInfo);
-      console.log('selectedPaymentMethod:', selectedPaymentMethod);
-      console.log('isCODOrder:', isCODOrder);
-    };
-  </script>
-</body>
-</html>
+      <p style="font-size: 0.95rem; color: #6
