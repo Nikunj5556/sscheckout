@@ -36,7 +36,7 @@
       }
     }
 
-    /* Header with Logo */
+    /* Header with Logo - Snapsnicker Branding */
     .checkout-header {
       display: flex;
       align-items: center;
@@ -589,7 +589,7 @@
 <body>
   <div class="checkout-container">
     <div class="checkout-left">
-      <!-- Brand Header -->
+      <!-- Snapsnicker Brand Header -->
       <div class="checkout-header">
         <img src="/assets/images/logo.png" alt="Snapsnicker Logo" />
         <h1>Snapsnicker</h1>
@@ -788,7 +788,6 @@
       <p style="font-weight: 600; color: #111827;">Processing your order...</p>
     </div>
   </div>
-
   <script>
     // ===== CONFIGURATION =====
     const SUPABASE_URL = 'https://ihbwdypumlqfakllqvgs.supabase.co';
@@ -955,105 +954,85 @@
     }
 
     // ===== CART MANAGEMENT =====
-    <script>
-  function getCheckoutPayload() {
-    // Try URL param first
-    const params = new URLSearchParams(window.location.search);
-    const encoded = params.get('d');
+    function loadCart() {
+      console.log('📦 Loading cart from localStorage...');
+      const stored = localStorage.getItem('sscheckout_cart');
 
-    if (encoded) {
-      try {
-        const json = decodeURIComponent(atob(encoded));
-        return JSON.parse(json);
-      } catch (e) {
-        console.error('Failed to decode URL payload:', e);
+      if (!stored) {
+        console.warn('⚠️ No cart data found');
+        showError('No cart data found. Please add items to cart first.');
+        return;
       }
-    }
 
-    // Fallback: localStorage (will only work if same origin)
-    const stored = localStorage.getItem('sscheckout_cart');
-    if (stored) {
       try {
-        // Try Base64-decoding first
-        const maybeDecoded = decodeURIComponent(atob(stored));
-        return JSON.parse(maybeDecoded);
-      } catch (_) {
-        // If not encoded, try raw JSON
-        try {
-          return JSON.parse(stored);
-        } catch (e2) {
-          console.error('Failed to parse localStorage payload:', e2);
+        const decoded = JSON.parse(stored);
+        cartData = decoded;
+
+        console.log('✓ Cart loaded:', cartData);
+
+        if (cartData.store_details) {
+          storeInfo = cartData.store_details;
+          console.log('✓ Store info loaded:', storeInfo);
         }
+
+        displayCartSummary();
+      } catch (error) {
+        console.error('❌ Failed to parse cart data:', error);
+        showError('Invalid cart data. Please try again.');
       }
     }
 
-    return null;
-  }
+    function displayCartSummary() {
+      if (!cartData || !cartData.cart || !cartData.cart.products || cartData.cart.products.length === 0) {
+        console.warn('⚠️ Cart is empty');
+        return;
+      }
 
-function normalizeToCheckoutSchema(payload) {
-  if (!payload) return null;
+      const products = cartData.cart.products;
+      const itemCount = products.reduce((sum, p) => sum + (p.quantity || 1), 0);
+      document.getElementById('cartItemsCount').textContent = itemCount;
 
-  const cart = payload.cart || {};
-  const items = cart.items || [];
-
-  const products = items.map(item => ({
-    title: item.title,
-    price: Math.round((item.final_price ?? item.price ?? 0) / 100),
-    quantity: item.quantity || 1,
-    image: item.featured_image || item.image,
-    variant_title: item.variant_title,
-    product_id: item.product_id,
-    variant_id: item.variant_id,
-    sku: item.sku,
-    vendor: item.vendor,
-    product_type: item.product_type,
-    properties: item.properties || {}
-  }));
-
-  const store_details = {
-    domain: payload.store?.domain,
-    name: payload.store?.name,
-    currency: payload.store?.currency,
-    razorpay_key_id: undefined // inject if available
-  };
-
-  return { products, store_details };
-}
-
-
-  function loadCart() {
-    console.log('📦 Loading cart (URL param/localStorage)...');
-
-    const payload = getCheckoutPayload();
-    if (!payload) {
-      showError('No cart data found. Please add items to cart first.');
-      console.warn('No payload found in URL/localStorage');
-      return;
+      updatePriceSummary();
     }
 
-    const normalized = normalizeToCheckoutSchema(payload);
-    if (!normalized || !normalized.products || normalized.products.length === 0) {
-      showError('Your cart is empty. Please add items before checkout.');
-      console.warn('Normalized cart empty:', normalized);
-      return;
+    function updatePriceSummary() {
+      const subtotal = calculateSubtotal();
+      const shipping = 0; // Free shipping
+      const gst = Math.round(subtotal * 0.05);
+      const discount = appliedDiscount ? appliedDiscount.amount : 0;
+      const total = subtotal + shipping + gst - discount;
+
+      document.getElementById('subtotal').textContent = `₹${subtotal}`;
+      document.getElementById('shipping').textContent = shipping === 0 ? 'Free' : `₹${shipping}`;
+      document.getElementById('gst').textContent = `₹${gst}`;
+      document.getElementById('total').textContent = `₹${total}`;
+
+      document.getElementById('gstRow').style.display = gst > 0 ? 'flex' : 'none';
+
+      if (discount > 0) {
+        document.getElementById('discountRow').style.display = 'flex';
+        document.getElementById('discountAmount').textContent = `-₹${discount}`;
+      } else {
+        document.getElementById('discountRow').style.display = 'none';
+      }
+
+      // Update COD amounts if COD is selected
+      if (isCODOrder) {
+        updateCODAmounts();
+      }
     }
 
-    // Attach to existing globals
-    cartData = normalized;
-    storeInfo = normalized.store_details || {};
+    function calculateSubtotal() {
+      if (!cartData || !cartData.cart || !cartData.cart.products) return 0;
+      return cartData.cart.products.reduce((sum, p) => sum + (p.price * (p.quantity || 1)), 0);
+    }
 
-    console.log('✓ Cart normalized:', cartData);
-    console.log('✓ Store info:', storeInfo);
-
-    displayCartSummary();
-  }
-
-  // Initialize remains the same, but rely on new loadCart
-  window.addEventListener('DOMContentLoaded', () => {
-    console.log('\n🚀 Initializing checkout page...');
-    populateOptions();
-    loadCart();
-  });
+    function calculateTotal() {
+      const subtotal = calculateSubtotal();
+      const gst = Math.round(subtotal * 0.05);
+      const discount = appliedDiscount ? appliedDiscount.amount : 0;
+      return subtotal + gst - discount;
+    }
 
     // ===== DISCOUNT MANAGEMENT =====
     function applyDiscount() {
@@ -1125,7 +1104,7 @@ function normalizeToCheckoutSchema(payload) {
         return;
       }
 
-      if (!cartData || !cartData.products || cartData.products.length === 0) {
+      if (!cartData || !cartData.cart || !cartData.cart.products || cartData.cart.products.length === 0) {
         showError('Your cart is empty. Please add items before checkout.');
         return;
       }
@@ -1157,7 +1136,7 @@ function normalizeToCheckoutSchema(payload) {
       // Create order data
       const orderData = {
         customer: formData,
-        products: cartData.products,
+        products: cartData.cart.products,
         pricing: {
           subtotal: calculateSubtotal(),
           shipping: 0,
@@ -1300,7 +1279,7 @@ function normalizeToCheckoutSchema(payload) {
 
     // ===== INITIALIZE =====
     window.addEventListener('DOMContentLoaded', () => {
-      console.log('\n🚀 Initializing checkout page...');
+      console.log('\n🚀 Initializing Snapsnicker checkout page...');
       populateOptions();
       loadCart();
     });
