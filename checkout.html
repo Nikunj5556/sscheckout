@@ -955,82 +955,105 @@
     }
 
     // ===== CART MANAGEMENT =====
-    function loadCart() {
-      console.log('📦 Loading cart from localStorage...');
-      const stored = localStorage.getItem('sscheckout_cart');
+    <script>
+  function getCheckoutPayload() {
+    // Try URL param first
+    const params = new URLSearchParams(window.location.search);
+    const encoded = params.get('d');
 
-      if (!stored) {
-        console.warn('⚠️ No cart data found');
-        showError('No cart data found. Please add items to cart first.');
-        return;
-      }
-
+    if (encoded) {
       try {
-        cartData = JSON.parse(stored);
-        console.log('✓ Cart loaded:', cartData);
+        const json = decodeURIComponent(atob(encoded));
+        return JSON.parse(json);
+      } catch (e) {
+        console.error('Failed to decode URL payload:', e);
+      }
+    }
 
-        if (cartData.store_details) {
-          storeInfo = cartData.store_details;
-          console.log('✓ Store info loaded:', storeInfo);
+    // Fallback: localStorage (will only work if same origin)
+    const stored = localStorage.getItem('sscheckout_cart');
+    if (stored) {
+      try {
+        // Try Base64-decoding first
+        const maybeDecoded = decodeURIComponent(atob(stored));
+        return JSON.parse(maybeDecoded);
+      } catch (_) {
+        // If not encoded, try raw JSON
+        try {
+          return JSON.parse(stored);
+        } catch (e2) {
+          console.error('Failed to parse localStorage payload:', e2);
         }
-
-        displayCartSummary();
-      } catch (error) {
-        console.error('❌ Failed to parse cart data:', error);
-        showError('Invalid cart data. Please try again.');
       }
     }
 
-    function displayCartSummary() {
-      if (!cartData || !cartData.products || cartData.products.length === 0) {
-        console.warn('⚠️ Cart is empty');
-        return;
-      }
+    return null;
+  }
 
-      const itemCount = cartData.products.reduce((sum, p) => sum + (p.quantity || 1), 0);
-      document.getElementById('cartItemsCount').textContent = itemCount;
+function normalizeToCheckoutSchema(payload) {
+  if (!payload) return null;
 
-      updatePriceSummary();
+  const cart = payload.cart || {};
+  const items = cart.items || [];
+
+  const products = items.map(item => ({
+    title: item.title,
+    price: Math.round((item.final_price ?? item.price ?? 0) / 100),
+    quantity: item.quantity || 1,
+    image: item.featured_image || item.image,
+    variant_title: item.variant_title,
+    product_id: item.product_id,
+    variant_id: item.variant_id,
+    sku: item.sku,
+    vendor: item.vendor,
+    product_type: item.product_type,
+    properties: item.properties || {}
+  }));
+
+  const store_details = {
+    domain: payload.store?.domain,
+    name: payload.store?.name,
+    currency: payload.store?.currency,
+    razorpay_key_id: undefined // inject if available
+  };
+
+  return { products, store_details };
+}
+
+
+  function loadCart() {
+    console.log('📦 Loading cart (URL param/localStorage)...');
+
+    const payload = getCheckoutPayload();
+    if (!payload) {
+      showError('No cart data found. Please add items to cart first.');
+      console.warn('No payload found in URL/localStorage');
+      return;
     }
 
-    function updatePriceSummary() {
-      const subtotal = calculateSubtotal();
-      const shipping = 0; // Free shipping
-      const gst = Math.round(subtotal * 0.05);
-      const discount = appliedDiscount ? appliedDiscount.amount : 0;
-      const total = subtotal + shipping + gst - discount;
-
-      document.getElementById('subtotal').textContent = `₹${subtotal}`;
-      document.getElementById('shipping').textContent = shipping === 0 ? 'Free' : `₹${shipping}`;
-      document.getElementById('gst').textContent = `₹${gst}`;
-      document.getElementById('total').textContent = `₹${total}`;
-
-      document.getElementById('gstRow').style.display = gst > 0 ? 'flex' : 'none';
-
-      if (discount > 0) {
-        document.getElementById('discountRow').style.display = 'flex';
-        document.getElementById('discountAmount').textContent = `-₹${discount}`;
-      } else {
-        document.getElementById('discountRow').style.display = 'none';
-      }
-
-      // Update COD amounts if COD is selected
-      if (isCODOrder) {
-        updateCODAmounts();
-      }
+    const normalized = normalizeToCheckoutSchema(payload);
+    if (!normalized || !normalized.products || normalized.products.length === 0) {
+      showError('Your cart is empty. Please add items before checkout.');
+      console.warn('Normalized cart empty:', normalized);
+      return;
     }
 
-    function calculateSubtotal() {
-      if (!cartData || !cartData.products) return 0;
-      return cartData.products.reduce((sum, p) => sum + (p.price * (p.quantity || 1)), 0);
-    }
+    // Attach to existing globals
+    cartData = normalized;
+    storeInfo = normalized.store_details || {};
 
-    function calculateTotal() {
-      const subtotal = calculateSubtotal();
-      const gst = Math.round(subtotal * 0.05);
-      const discount = appliedDiscount ? appliedDiscount.amount : 0;
-      return subtotal + gst - discount;
-    }
+    console.log('✓ Cart normalized:', cartData);
+    console.log('✓ Store info:', storeInfo);
+
+    displayCartSummary();
+  }
+
+  // Initialize remains the same, but rely on new loadCart
+  window.addEventListener('DOMContentLoaded', () => {
+    console.log('\n🚀 Initializing checkout page...');
+    populateOptions();
+    loadCart();
+  });
 
     // ===== DISCOUNT MANAGEMENT =====
     function applyDiscount() {
