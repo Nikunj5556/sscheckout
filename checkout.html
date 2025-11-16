@@ -892,3 +892,602 @@
       <p style="font-weight: 600; color: #111827;">Processing your order...</p>
     </div>
   </div>
+
+  <script>
+    // ===== CONFIGURATION (EXACT ORIGINAL) =====
+    const SUPABASE_URL = 'https://xdieivjjxxqgullwrzhq.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkaWVpdmpqeHhxZ3VsbHdyemhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NDU3NTYsImV4cCI6MjA3ODUyMTc1Nn0.Y2VIOiJq4aRjd6hTxvkYk4sJJyCFio0NQ7SlLLYZ9xM';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Razorpay Configuration (EXACT ORIGINAL)
+    const RAZORPAY_KEY_ID = 'rzp_live_3v7BmF6j3iuh2u';
+
+    // Global variables (EXACT ORIGINAL)
+    let cartData = null;
+    let appliedDiscount = null;
+    let selectedPaymentMethod = null;
+    let storeInfo = null;
+
+    // ===== INDIAN STATES (EXACT ORIGINAL) =====
+    const states = [
+      'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+      'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka',
+      'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram',
+      'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana',
+      'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+      'Andaman and Nicobar Islands', 'Chandigarh', 'Dadra and Nagar Haveli and Daman and Diu',
+      'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry'
+    ];
+
+    const codeMap = {
+      'UP': 'Uttar Pradesh', 'MH': 'Maharashtra', 'DL': 'Delhi', 'KA': 'Karnataka',
+      'TN': 'Tamil Nadu', 'WB': 'West Bengal', 'GJ': 'Gujarat', 'RJ': 'Rajasthan',
+      'KL': 'Kerala', 'HR': 'Haryana', 'PB': 'Punjab', 'AP': 'Andhra Pradesh',
+      'TG': 'Telangana', 'BR': 'Bihar', 'MP': 'Madhya Pradesh', 'OR': 'Odisha',
+      'AS': 'Assam', 'JH': 'Jharkhand', 'CG': 'Chhattisgarh', 'UK': 'Uttarakhand',
+      'HP': 'Himachal Pradesh', 'GA': 'Goa', 'TR': 'Tripura', 'ML': 'Meghalaya',
+      'MN': 'Manipur', 'NL': 'Nagaland', 'MZ': 'Mizoram', 'AR': 'Arunachal Pradesh',
+      'SK': 'Sikkim', 'JK': 'Jammu and Kashmir', 'LA': 'Ladakh', 'CH': 'Chandigarh',
+      'AN': 'Andaman and Nicobar Islands', 'DD': 'Dadra and Nagar Haveli and Daman and Diu',
+      'LD': 'Lakshadweep', 'PY': 'Puducherry'
+    };
+
+    // ===== CUSTOM STATE DROPDOWN (EXACT ORIGINAL) =====
+    function populateStateDropdown() {
+      const stateBox = document.getElementById('stateSelectBox');
+      const stateOptions = document.getElementById('stateOptions');
+      const stateInput = document.getElementById('stateInput');
+
+      const searchInput = document.createElement('input');
+      searchInput.type = 'text';
+      searchInput.className = 'select-search';
+      searchInput.placeholder = 'Search state (type name or code)';
+      searchInput.id = 'searchInput';
+      stateOptions.appendChild(searchInput);
+
+      states.forEach(state => {
+        const option = document.createElement('div');
+        option.className = 'select-option';
+        option.textContent = state;
+        option.onclick = () => {
+          stateInput.value = state;
+          stateBox.textContent = state;
+          stateBox.classList.remove('active');
+          stateOptions.classList.remove('active');
+          searchInput.value = '';
+          Array.from(stateOptions.querySelectorAll('.select-option')).forEach(o => o.classList.remove('hidden'));
+        };
+        stateOptions.appendChild(option);
+      });
+
+      stateBox.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isActive = stateOptions.classList.contains('active');
+
+        document.querySelectorAll('.select-options.active').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.select-box.active').forEach(el => el.classList.remove('active'));
+
+        if (!isActive) {
+          stateOptions.classList.add('active');
+          stateBox.classList.add('active');
+          searchInput.focus();
+        }
+      });
+
+      searchInput.addEventListener('input', (e) => {
+        const filter = e.target.value.trim().toLowerCase();
+        const options = Array.from(stateOptions.querySelectorAll('.select-option'));
+
+        if (filter === '') {
+          options.forEach(o => o.classList.remove('hidden'));
+          return;
+        }
+
+        options.forEach(option => {
+          const text = option.textContent.toLowerCase();
+
+          if (text.includes(filter)) {
+            option.classList.remove('hidden');
+            return;
+          }
+
+          if (filter.length >= 2 && filter.length <= 3) {
+            const mapped = codeMap[filter.toUpperCase()];
+            if (mapped && text === mapped.toLowerCase()) {
+              option.classList.remove('hidden');
+              return;
+            }
+          }
+
+          option.classList.add('hidden');
+        });
+      });
+
+      searchInput.addEventListener('click', (e) => e.stopPropagation());
+
+      document.addEventListener('click', () => {
+        stateOptions.classList.remove('active');
+        stateBox.classList.remove('active');
+      });
+    }
+
+    // ===== PAYMENT METHOD SELECTION (WITH COD BOX) =====
+    document.addEventListener('click', (e) => {
+      if (e.target.classList.contains('method-btn')) {
+        document.querySelectorAll('.method-btn').forEach(btn => btn.classList.remove('selected'));
+        e.target.classList.add('selected');
+        selectedPaymentMethod = e.target.getAttribute('data-method');
+
+        const codBox = document.getElementById('codConfirmationBox');
+        if (selectedPaymentMethod === 'cod') {
+          codBox.classList.add('active');
+          updateCODAmounts();
+        } else {
+          codBox.classList.remove('active');
+        }
+
+        console.log('✓ Payment method:', selectedPaymentMethod);
+      }
+    });
+
+    // ===== COD AMOUNT UPDATE =====
+    function updateCODAmounts() {
+      if (!cartData) return;
+
+      const total = Math.round((cartData.total_price || 0) / 100);
+      const confirmationAmount = 300;
+      const remainingAmount = total - confirmationAmount;
+
+      document.getElementById('codTotalAmount').textContent = `₹${total}`;
+      document.getElementById('codRemainingAmount').textContent = `₹${remainingAmount}`;
+    }
+
+    // ===== CART LOADING (EXACT ORIGINAL) =====
+    function loadCart() {
+      console.log('\n📦 LOADING CART DATA...');
+      console.log('─'.repeat(50));
+
+      let checkoutData = null;
+
+      // METHOD 1: Try localStorage (Primary)
+      console.log('🔍 Checking localStorage...');
+      const localStorageData = localStorage.getItem('sscheckout_cart');
+      const timestamp = localStorage.getItem('sscheckout_timestamp');
+
+      if (localStorageData) {
+        console.log('✅ Found data in localStorage');
+        console.log('   Length:', localStorageData.length, 'characters');
+        console.log('   Timestamp:', timestamp ? new Date(parseInt(timestamp)).toLocaleString() : 'N/A');
+
+        try {
+          const decoded = decodeURIComponent(atob(localStorageData));
+          checkoutData = JSON.parse(decoded);
+          console.log('✅ Successfully decoded localStorage data');
+        } catch (e) {
+          console.error('❌ Failed to decode localStorage:', e.message);
+        }
+      } else {
+        console.log('⚠️ No data found in localStorage');
+      }
+
+      // METHOD 2: Try URL parameter (Fallback)
+      if (!checkoutData) {
+        console.log('🔍 Checking URL parameters...');
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlData = urlParams.get('d');
+
+        if (urlData) {
+          console.log('✅ Found data in URL parameter');
+          console.log('   Length:', urlData.length, 'characters');
+
+          try {
+            const decoded = decodeURIComponent(atob(urlData));
+            checkoutData = JSON.parse(decoded);
+            console.log('✅ Successfully decoded URL data');
+          } catch (e) {
+            console.error('❌ Failed to decode URL parameter:', e.message);
+          }
+        } else {
+          console.log('⚠️ No data found in URL parameters');
+        }
+      }
+
+      // If no data found
+      if (!checkoutData || !checkoutData.cart) {
+        console.error('\n❌ NO CART DATA FOUND');
+        console.log('─'.repeat(50));
+        document.getElementById('mainCheckout').innerHTML = 
+          '<div style="text-align: center; padding: 60px 20px;">' +
+          '<h2 style="color: #ef4444; margin-bottom: 16px;">No Cart Data Found</h2>' +
+          '<p style="color: #6b7280; margin-bottom: 24px;">Please add items to your cart before checking out.</p>' +
+          '<a href="/" style="display: inline-block; padding: 12px 24px; background: #10b981; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">Return to Store</a>' +
+          '</div>';
+        return;
+      }
+
+      try {
+        cartData = checkoutData.cart;
+        storeInfo = checkoutData.store;
+
+        console.log('\n✅ CART DATA LOADED SUCCESSFULLY');
+        console.log('─'.repeat(50));
+        console.log('📊 Cart Summary:');
+        console.log('   Items:', cartData.items.length);
+        console.log('   Item count:', cartData.item_count);
+        console.log('   Total:', (cartData.total_price / 100).toFixed(2), cartData.currency);
+        console.log('   Store:', storeInfo.name);
+        console.log('─'.repeat(50));
+
+        // Display cart items with images
+        displayCartItems();
+        displayCartSummary();
+      } catch (error) {
+        console.error('❌ Error processing cart:', error);
+        document.getElementById('mainCheckout').innerHTML = 
+          '<div style="text-align: center; padding: 60px 20px;">' +
+          '<h2 style="color: #ef4444; margin-bottom: 16px;">Error Loading Cart</h2>' +
+          '<p style="color: #6b7280; margin-bottom: 24px;">There was an error loading your cart data.</p>' +
+          '<a href="/" style="display: inline-block; padding: 12px 24px; background: #10b981; color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">Return to Store</a>' +
+          '</div>';
+      }
+    }
+
+    // ===== DISPLAY CART ITEMS WITH IMAGES =====
+    function displayCartItems() {
+      const container = document.getElementById('cartItemsContainer');
+      if (!cartData || !cartData.items || cartData.items.length === 0) {
+        container.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 20px;">No items in cart</p>';
+        return;
+      }
+
+      container.innerHTML = '';
+
+      cartData.items.forEach((item, index) => {
+        console.log(`   ${index + 1}. ${item.title}`);
+        console.log(`      Variant: ${item.variant_title || 'N/A'}`);
+        console.log(`      Price: ₹${(item.price / 100).toFixed(2)} × ${item.quantity}`);
+        console.log(`      Image: ${item.image ? 'Yes' : 'No'}`);
+
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'cart-item';
+
+        const imageUrl = item.image || item.featured_image || '/assets/images/placeholder.png';
+
+        itemDiv.innerHTML = `
+          <img src="${imageUrl}" alt="${item.title}" class="cart-item-image" onerror="this.src='/assets/images/placeholder.png'" />
+          <div class="cart-item-details">
+            <div class="cart-item-title">${item.title || item.product_title || 'Product'}</div>
+            ${item.variant_title ? `<div class="cart-item-variant">${item.variant_title}</div>` : ''}
+            <div class="cart-item-price">₹${(item.price / 100).toFixed(2)}</div>
+            <div class="cart-item-quantity">Quantity: ${item.quantity}</div>
+          </div>
+        `;
+
+        container.appendChild(itemDiv);
+      });
+    }
+
+    // ===== DISPLAY CART SUMMARY (EXACT ORIGINAL) =====
+    function displayCartSummary() {
+      if (!cartData || !cartData.items || cartData.items.length === 0) {
+        console.warn('⚠️ Cart is empty');
+        return;
+      }
+
+      updatePriceSummary();
+    }
+
+    // ===== UPDATE PRICE SUMMARY (EXACT ORIGINAL) =====
+    function updatePriceSummary() {
+      const subtotal = Math.round((cartData.total_price || 0) / 100);
+      const shipping = 0;
+      const discount = appliedDiscount ? appliedDiscount.amount : 0;
+      const total = subtotal + shipping - discount;
+
+      document.getElementById('subtotal').textContent = `₹${subtotal}`;
+      document.getElementById('shipping').textContent = shipping === 0 ? 'Free' : `₹${shipping}`;
+      document.getElementById('total').textContent = `₹${total}`;
+
+      if (discount > 0) {
+        document.getElementById('discountRow').style.display = 'flex';
+        document.getElementById('discountAmount').textContent = `-₹${discount}`;
+      } else {
+        document.getElementById('discountRow').style.display = 'none';
+      }
+    }
+
+    // ===== DISCOUNT MANAGEMENT (EXACT ORIGINAL) =====
+    function applyDiscount() {
+      const code = document.getElementById('discountCode').value.trim();
+      const messageDiv = document.getElementById('discountMessage');
+
+      if (!code) {
+        messageDiv.innerHTML = '<p style="color: #ef4444; margin-top: 10px; font-size: 0.9rem;">Please enter a discount code</p>';
+        return;
+      }
+
+      const validDiscounts = {
+        'SAVE10': { type: 'percentage', value: 10 },
+        'FLAT100': { type: 'fixed', value: 100 },
+        'WELCOME20': { type: 'percentage', value: 20 }
+      };
+
+      if (validDiscounts[code.toUpperCase()]) {
+        const discount = validDiscounts[code.toUpperCase()];
+        const subtotal = Math.round((cartData.total_price || 0) / 100);
+
+        if (discount.type === 'percentage') {
+          appliedDiscount = {
+            code: code.toUpperCase(),
+            amount: Math.round((subtotal * discount.value) / 100)
+          };
+        } else {
+          appliedDiscount = {
+            code: code.toUpperCase(),
+            amount: discount.value
+          };
+        }
+
+        messageDiv.innerHTML = `<p style="color: #10b981; margin-top: 10px; font-size: 0.9rem; font-weight: 600;">✓ Discount applied: ${appliedDiscount.code}</p>`;
+        updatePriceSummary();
+      } else {
+        messageDiv.innerHTML = '<p style="color: #ef4444; margin-top: 10px; font-size: 0.9rem;">Invalid discount code</p>';
+      }
+    }
+
+    // ===== FORM VALIDATION (EXACT ORIGINAL) =====
+    function validateForm() {
+      const form = document.getElementById('checkoutForm');
+      const inputs = form.querySelectorAll('input[required], textarea[required]');
+
+      for (let input of inputs) {
+        if (!input.value.trim()) {
+          showError(`Please fill in: ${input.previousElementSibling?.textContent || 'required field'}`);
+          input.focus();
+          return false;
+        }
+      }
+
+      if (!selectedPaymentMethod) {
+        showError('Please select a payment method');
+        return false;
+      }
+
+      return true;
+    }
+
+    // ===== CHECKOUT HANDLER (MODIFIED FOR COD) =====
+    async function handleCheckout() {
+      console.log('\n🛒 Starting checkout process...');
+
+      if (!validateForm()) {
+        console.warn('⚠️ Form validation failed');
+        return;
+      }
+
+      if (!cartData || !cartData.items || cartData.items.length === 0) {
+        showError('Your cart is empty. Please add items before checkout.');
+        return;
+      }
+
+      showLoading(true);
+
+      const subtotal = Math.round((cartData.total_price || 0) / 100);
+      const discount = appliedDiscount ? appliedDiscount.amount : 0;
+      const totalAmount = subtotal - discount;
+
+      // Generate order ID (EXACT ORIGINAL)
+      const orderId = 'ORD-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+
+      // EXACT ORIGINAL ORDER DATA STRUCTURE
+      const orderData = {
+        order_id: orderId,
+        customer_name: document.getElementById('fullName').value,
+        email: document.getElementById('email').value,
+        phone: '+91' + document.getElementById('phone').value,
+        address: document.getElementById('address').value + ', ' + document.getElementById('city').value,
+        state: document.getElementById('stateInput').value,
+        postal_code: document.getElementById('postalCode').value,
+        payment_method: selectedPaymentMethod,
+        payment_status: selectedPaymentMethod === 'cod' ? 'Unpaid' : 'Pending',
+        discount_code: appliedDiscount ? appliedDiscount.code : null,
+        order_items: cartData.items.map(item => ({
+          title: item.title || item.product_title,
+          variant: item.variant_title,
+          quantity: item.quantity,
+          price: item.price / 100,
+          image: item.image || item.featured_image
+        })),
+        subtotal: subtotal,
+        discount: discount,
+        total_amount: totalAmount,
+        created_at: new Date().toISOString()
+      };
+
+      console.log('📋 Order data:', orderData);
+      console.log('💰 Total amount:', totalAmount);
+      console.log('📦 Payment method:', selectedPaymentMethod);
+
+      // ONLY CHANGE: COD amount is 300, others full amount
+      const amountToCharge = selectedPaymentMethod === 'cod' ? 300 : totalAmount;
+      console.log('💳 Amount to charge:', amountToCharge);
+
+      // Call EXACT ORIGINAL function name
+      initiateRazorpay(orderData, amountToCharge);
+    }
+
+    // ===== DATABASE OPERATIONS (EXACT ORIGINAL - FIXED) =====
+    async function saveOrderToDatabase(orderData) {
+      try {
+        showLoading(true);
+        console.log('💾 Saving order to database...');
+
+        // Save to 'orders' table with EXACT ORIGINAL field mapping
+        const { data: order, error: orderError } = await supabase
+          .from('orders')
+          .insert([{
+            order_id: orderData.order_id,
+            customer_name: orderData.customer_name,
+            email: orderData.email,
+            phone: orderData.phone,
+            address: orderData.address,
+            state: orderData.state,
+            postal_code: orderData.postal_code,
+            payment_method: orderData.payment_method,
+            payment_status: orderData.payment_status,
+            discount_code: orderData.discount_code,
+            subtotal: orderData.subtotal,
+            total_amount: orderData.total_amount,
+            created_at: orderData.created_at
+          }])
+          .select();
+
+        if (orderError) throw orderError;
+
+        // Save to 'order_items' table (EXACT ORIGINAL)
+        const orderItems = orderData.order_items.map(item => ({
+          order_id: orderData.order_id,
+          product_title: item.title,
+          variant: item.variant,
+          quantity: item.quantity,
+          price: item.price
+        }));
+
+        const { error: itemsError } = await supabase
+          .from('order_items')
+          .insert(orderItems);
+
+        if (itemsError) throw itemsError;
+
+        showLoading(false);
+        console.log('✅ Order saved successfully:', orderData.order_id);
+      } catch (error) {
+        showLoading(false);
+        console.error('❌ Save order error:', error);
+        throw error;
+      }
+    }
+
+    // ===== UPDATE PAYMENT STATUS (EXACT ORIGINAL) =====
+    async function updatePaymentStatus(orderId, status, paymentId = null) {
+      console.log('📝 Updating payment status...');
+
+      try {
+        const updateData = {
+          payment_status: status
+        };
+
+        if (paymentId) {
+          updateData.razorpay_payment_id = paymentId;
+        }
+
+        const { data, error } = await supabase
+          .from('orders')
+          .update(updateData)
+          .eq('order_id', orderId)
+          .select();
+
+        if (error) throw error;
+
+        console.log('✅ Payment status updated:', status);
+      } catch (error) {
+        console.error('❌ Payment status update error:', error);
+      }
+    }
+
+    // ===== RAZORPAY INTEGRATION (EXACT ORIGINAL - NO CHANGES) =====
+    function initiateRazorpay(orderData, amount) {
+      console.log('💳 Initiating Razorpay payment...');
+
+      const options = {
+        key: RAZORPAY_KEY_ID,
+        amount: Math.round(amount * 100),
+        currency: 'INR',
+        name: storeInfo ? storeInfo.name : 'Snapsnicker',
+        description: `Order #${orderData.order_id}`,
+        image: '/assets/images/logo.png',
+        prefill: {
+          name: orderData.customer_name,
+          email: orderData.email,
+          contact: orderData.phone
+        },
+        theme: { color: '#10b981' },
+        handler: async function(response) {
+          console.log('✅ Payment successful:', response.razorpay_payment_id);
+          showLoading(true);
+          orderData.payment_status = 'Paid';
+          orderData.razorpay_payment_id = response.razorpay_payment_id;
+
+          await saveOrderToDatabase(orderData);
+          await updatePaymentStatus(orderData.order_id, 'Paid', response.razorpay_payment_id);
+
+          showLoading(false);
+          showThankYou(orderData.order_id, orderData.email);
+        },
+        modal: {
+          ondismiss: function() {
+            console.log('⚠️ Payment cancelled by user');
+            showError('Payment cancelled. Please try again.');
+            showLoading(false);
+          }
+        }
+      };
+
+      saveOrderToDatabase(orderData).then(() => {
+        const rzp = new Razorpay(options);
+        rzp.open();
+        showLoading(false);
+      }).catch((error) => {
+        console.error('❌ Failed to save order:', error);
+        showError('Failed to create order. Please try again.');
+        showLoading(false);
+      });
+    }
+
+    // ===== UI HELPERS (EXACT ORIGINAL) =====
+    function showThankYou(orderId, email) {
+      console.log('✅ Showing thank you screen');
+      document.getElementById('mainCheckout').classList.add('hidden');
+      document.getElementById('thankYouScreen').classList.add('active');
+      document.getElementById('displayOrderId').textContent = orderId;
+      document.getElementById('customerEmail').textContent = email;
+
+      localStorage.removeItem('sscheckout_cart');
+      localStorage.removeItem('sscheckout_timestamp');
+    }
+
+    function showLoading(show) {
+      document.getElementById('loadingOverlay').classList.toggle('active', show);
+    }
+
+    function showError(message) {
+      const errorDiv = document.getElementById('errorMessage');
+      errorDiv.innerHTML = message;
+      errorDiv.classList.add('active');
+
+      setTimeout(() => {
+        errorDiv.classList.remove('active');
+      }, 8000);
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ===== INITIALIZE (EXACT ORIGINAL) =====
+    window.addEventListener('DOMContentLoaded', () => {
+      console.log('\n🚀 Initializing Snapsnicker checkout page...');
+      populateStateDropdown();
+      loadCart();
+    });
+
+    // Debug helper
+    window.debugCheckout = function() {
+      console.log('=== DEBUG INFO ===');
+      console.log('localStorage cart:', localStorage.getItem('sscheckout_cart'));
+      console.log('cartData:', cartData);
+      console.log('storeInfo:', storeInfo);
+      console.log('selectedPaymentMethod:', selectedPaymentMethod);
+      console.log('appliedDiscount:', appliedDiscount);
+    };
+  </script>
+</body>
+</html>
