@@ -819,4 +819,76 @@
             </div>
           </div>
 
-          <button type="button" class="pay-btn" onclick="handleCheckout()">Plac
+          <button type="button" class="pay-btn" onclick="handleCheckout()">Place Order</button>
+        </form>
+      </div>
+
+      <div class="thank-you-screen" id="thankYouScreen">
+        <div class="success-icon">✓</div>
+        <h2 class="thank-you-title">Order Placed Successfully!</h2>
+        <p style="color: #6b7280; font-size: 1rem; line-height: 1.6; margin-bottom: 20px;">
+          Your order has been successfully placed.<br />
+          We've sent a confirmation email to <strong id="customerEmail"></strong>
+        </p>
+        <div class="order-id-box">
+          <p style="color: #6b7280; font-size: 0.9rem; margin-bottom: 8px;">Order ID</p>
+          <p style="font-size: 1.3rem; font-weight: 700; color: #111827;" id="displayOrderId"></p>
+        </div>
+        <p style="color: #6b7280; font-size: 0.95rem; line-height: 1.6; margin-bottom: 20px;">
+          You'll receive updates about your order status via email and SMS.
+        </p>
+
+        <div class="thank-you-buttons">
+          <a href="https://snapsnicker2025.myshopify.com/" class="thank-you-btn primary">
+            <span>🏠</span>
+            <span>Return to Store</span>
+          </a>
+          <a href="https://my-orders-liard.vercel.app/" class="thank-you-btn secondary">
+            <span>📦</span>
+            <span>View My Orders</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="checkout-right">
+      <h3>Cart Items</h3>
+      <div class="cart-items" id="cartItemsContainer">
+        <!-- Cart items will be populated here -->
+      </div>
+
+      <h3>Order Summary</h3>
+      <div class="order-summary">
+        <div class="order-item">
+          <span>Subtotal</span>
+          <span id="subtotal">₹0</span>
+        </div>
+        <div class="order-item">
+          <span>Shipping</span>
+          <span id="shipping">Free</span>
+        </div>
+        <div class="order-item" id="discountRow" style="display: none;">
+          <span style="color: #10b981;">Discount Applied</span>
+          <span id="discountAmount" style="color: #10b981;">-₹0</span>
+        </div>
+        <div class="order-total">
+          <span>Total</span>
+          <span id="total">₹0</span>
+        </div>
+      </div>
+
+      <div class="discount-box">
+        <label>Have a discount code?</label>
+        <input type="text" id="discountCode" placeholder="Enter discount code" />
+        <button type="button" onclick="applyDiscount()">Apply Discount</button>
+        <div id="discountMessage"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <p style="font-weight: 600; color: #111827;">Processing your order...</p>
+    </div>
+  </div>
